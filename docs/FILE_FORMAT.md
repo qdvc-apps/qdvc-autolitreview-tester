@@ -235,10 +235,12 @@ Git host (and readable as plain text):
 - a `##` section per test (its anchor is the ID in lowercase, `#abcd-123`):
   status, type, references and date; a link to the test folder; the ground
   truth with its italics and a link to its BibTeX file; a table of research
-  questions (variant, question, found, count in the file name, marked ≠ when
-  it differs, export date); links to every artifact found (per variant for a
-  multi-RQ test, and the annotation files); then lists of annotations, issues
-  and key clashes, when there are any.
+  questions (variant, question, references found, annotation, or
+  `_(No annotation found.)_`); links to the screenshots, the references BIB
+  and the reports (per variant for a multi-RQ test; the research question
+  and annotation files aren't linked, since their text is in the table); then
+  lists of issues and key clashes, when there are any. A reference count that
+  doesn't match the file name appears under Issues.
 
 The export is meant to be saved at the top of the workspace as **README.md**
 (the Save panel suggests exactly that), so a Git host shows it on the

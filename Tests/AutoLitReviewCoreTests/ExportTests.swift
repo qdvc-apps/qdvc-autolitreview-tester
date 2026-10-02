@@ -138,13 +138,16 @@ final class ExportTests: XCTestCase {
 
         XCTAssertTrue(md.contains("\n## MD-1\n\n\u{274C} Errors, Single RQ, 3 references\n\n"))
         XCTAssertTrue(md.contains("**Ground truth:** Smith, J. (2024). Truth. *J of IS*, *7*. doi:10.1/x\n\n"))
-        XCTAssertTrue(md.contains("| What \\| why \\*and\\* \\<how\\>?<br>Second line | 3 | **4** \u{2260} | \u{2013} |\n"))
-        XCTAssertTrue(md.contains("**Annotations**\n\n- Line one  \n  Line \\_two\\_\n"))
+        XCTAssertTrue(md.contains("| Research question | Found | Annotation |\n| --- | ---: | --- |\n"))
+        XCTAssertTrue(md.contains("| What \\| why \\*and\\* \\<how\\>?<br>Second line | 3 | Line one<br>Line \\_two\\_ |\n"))
+        XCTAssertFalse(md.contains("**Annotations**"))
+        XCTAssertFalse(md.contains("In file name"))
+        XCTAssertFalse(md.contains("| Export date |\n"))
         XCTAssertTrue(md.contains("- \u{274C} **Error:** MD-1\\_references\\_n4.bib: the file name says 4 references, but the file has 3\n"))
 
         XCTAssertTrue(md.contains("\n## MD-2\n\n\u{2705} Complete, Multiple RQs, 4 references, exported 1 October 2026\n\n"))
-        XCTAssertTrue(md.contains("| Variant | Research question | Found | In file name | Export date |\n| ---: | --- | ---: | ---: | --- |\n"))
-        XCTAssertTrue(md.contains("| 1 | Question 1? | 2 | 2 | 1 October 2026 |\n"))
+        XCTAssertTrue(md.contains("| Variant | Research question | Found | Annotation |\n| ---: | --- | ---: | --- |\n"))
+        XCTAssertTrue(md.contains("| 1 | Question 1? | 2 | _(No annotation found.)_ |\n"))
         XCTAssertTrue(md.contains("**Key clashes** (for information)\n\n- Variant 1: `K\u{2018}1` (line 2) and `K\u{2018}1` (line 3)\n"))
         XCTAssertFalse(md.contains("<how>"))
     }
@@ -165,9 +168,11 @@ final class ExportTests: XCTestCase {
         XCTAssertTrue(md.contains("**Ground truth:** Lee, K. (2020). T. ([BibTeX](L-1/L-1_ground_truth.bib))\n\n"))
         XCTAssertTrue(md.contains("**Files:** [query screenshot](L-1/L-1_query/L-1_query_asked.png), "
             + "[response screenshot](L-1/L-1_query/L-1_response_received.png), "
-            + "[research question](L-1/L-1_query/L-1_RQ_asked.md), [references file](L-1/L-1_references_n3.bib), "
-            + "[report PDF](L-1/L-1_report.pdf), [report DOM (HTML)](L-1/L-1_report_DOM.html), "
-            + "[annotation](L-1/L-1_query/L-1_annotation.md)\n\n"))
+            + "[references BIB](L-1/L-1_references_n3.bib), "
+            + "[report PDF](L-1/L-1_report.pdf), [report DOM (HTML)](L-1/L-1_report_DOM.html)\n\n"))
+        XCTAssertFalse(md.contains("RQ_asked.md)"))
+        XCTAssertFalse(md.contains("annotation.md)"))
+        XCTAssertTrue(md.contains("| What is known about X? | 3 | Note |\n"))
         XCTAssertTrue(md.contains("**Files**\n\n- Variant 1: [query screenshot](L-2/L-2_query_variant1/L-2_variant1_query_asked.png), "))
         XCTAssertTrue(md.contains("- Variant 2: [query screenshot](L-2/L-2_query_variant2/L-2_variant2_query_asked.png), "))
         XCTAssertTrue(md.contains("[report PDF](L-2/L-2_variant2_report.pdf)\n"))

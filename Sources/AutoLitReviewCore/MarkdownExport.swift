@@ -4,7 +4,8 @@ extension Exporter {
     /// GitHub-flavoured Markdown, for reading on GitHub, GitLab and the like:
     /// a summary, an overview table whose test IDs link to a section per
     /// test, and in each section the ground truth, a table of research
-    /// questions, the annotations, issues and key clashes. Status is shown
+    /// questions with their annotations, links to the files, the issues and
+    /// key clashes. Status is shown
     /// with an emoji and a word, so it reads without colour. Text from the
     /// workspace is escaped, so it can never turn into Markdown or HTML.
     ///
@@ -76,37 +77,26 @@ extension Exporter {
             md += "\n\n"
         }
 
+        // The research questions with their reference counts and the
+        // tester's annotations. (A count that doesn't match the file name
+        // is listed under Issues.)
         let multi = test.kind == .multi
-        md += multi ? "| Variant | Research question | Found | In file name | Export date |\n"
-                    : "| Research question | Found | In file name | Export date |\n"
-        md += multi ? "| ---: | --- | ---: | ---: | --- |\n" : "| --- | ---: | ---: | --- |\n"
+        md += multi ? "| Variant | Research question | Found | Annotation |\n"
+                    : "| Research question | Found | Annotation |\n"
+        md += multi ? "| ---: | --- | ---: | --- |\n" : "| --- | ---: | --- |\n"
         for question in test.questions {
             var row = "| "
             if multi { row += "\(question.variant.map(String.init) ?? "\u{2013}") | " }
             row += question.question.map(cell) ?? "*Research question not available*"
             row += " | \(question.referencesFound.map(grouped) ?? "\u{2013}") | "
-            if let named = question.referencesInFileName {
-                row += question.countMatches == false ? "**\(grouped(named))** \u{2260}" : grouped(named)
-            } else {
-                row += "\u{2013}"
-            }
-            row += " | \(cell(ExportDate.longRange(question.exportDates) ?? "\u{2013}")) |\n"
+            row += question.annotation.map(cell) ?? noAnnotation
+            row += " |\n"
             md += row
         }
         md += "\n"
 
         if let base = linkBase {
             md += filesList(test, base: base)
-        }
-
-        let annotated = test.questions.filter { $0.annotation != nil }
-        if !annotated.isEmpty {
-            md += "**Annotations**\n\n"
-            for question in annotated {
-                let scope = question.variant.map { "Variant \($0): " } ?? ""
-                md += "- \(scope)\(paragraph(question.annotation ?? ""))\n"
-            }
-            md += "\n"
         }
 
         let issues = test.issues.map { ($0, nil as Int?) }
@@ -134,18 +124,27 @@ extension Exporter {
         return md
     }
 
-    /// Links to each research question's artifacts (and annotation), in
-    /// the standard order; missing ones are left out (they are in Issues).
+    /// What the Annotation column says when there is none.
+    static let noAnnotation = "_(No annotation found.)_"
+
+    /// The artifacts linked under each test's table, in the standard order.
+    /// The research question and annotation files aren't linked: their text
+    /// is already in the table.
+    static let linkedArtifacts: [ArtifactKind] = [.queryAsked, .responseReceived, .references, .report, .reportDOM]
+
+    /// The link text for an artifact.
+    static func linkText(_ kind: ArtifactKind) -> String {
+        kind == .references ? "references BIB" : kind.noun
+    }
+
+    /// Links to each research question's artifacts; missing ones are left
+    /// out (they are listed under Issues).
     private static func filesList(_ test: TestRun, base: URL) -> String {
         func links(_ question: ResearchQuestion) -> String {
-            var items = ArtifactKind.allCases.compactMap { kind -> String? in
+            linkedArtifacts.compactMap { kind -> String? in
                 guard let file = question.file(kind) else { return nil }
-                return "[\(inline(kind.noun))](\(relativeLink(from: base, to: file.url)))"
-            }
-            if let annotation = question.annotationFile {
-                items.append("[annotation](\(relativeLink(from: base, to: annotation)))")
-            }
-            return items.joined(separator: ", ")
+                return "[\(inline(linkText(kind)))](\(relativeLink(from: base, to: file.url)))"
+            }.joined(separator: ", ")
         }
         if test.kind == .single, let question = test.questions.first {
             let list = links(question)
@@ -218,13 +217,6 @@ extension Exporter {
     static func cell(_ text: String) -> String {
         text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
             .map { inline(String($0)) }.joined(separator: "<br>")
-    }
-
-    /// For a list item: escaped, with line breaks kept (two spaces, newline,
-    /// indent), so a multi-line annotation stays inside its bullet.
-    static func paragraph(_ text: String) -> String {
-        text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
-            .map { inline(String($0)) }.joined(separator: "  \n  ")
     }
 
     /// For inline code: backticks can't be escaped inside it, so they become
