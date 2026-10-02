@@ -161,6 +161,26 @@ The app shows them in the detail pane (a "clashing citation keys" row under
 the reference count) and as a count in the Research Questions table; both
 exports list them too (§4).
 
+### 3.5 Export dates (the date of a test)
+
+A BibTeX file may say when it was exported, as Scopus does at the top of its
+exports:
+
+```
+Scopus
+EXPORT DATE: 02 October 2026
+```
+
+Any `EXPORT DATE` (in any case, with or without the colon) anywhere in the
+file counts, including inside a field. The date may be written `02 October
+2026`, `2 Oct 2026`, `October 2, 2026`, `2026-10-02` or `02/10/2026` (day
+first); anything after the date on the line is ignored. A test's **date** is
+the export date of its BibTeX files; when its variants were exported on
+different days (or one file gives several dates) it is the range, written
+`1–2 October 2026`, `30 September – 2 October 2026` or
+`31 December 2025 – 2 January 2026`. A file without an export date is not a
+problem; the test just has no date (or a range over the files that have one).
+
 ## 4. Exports
 
 Both exports cover every test in the workspace, whatever the sidebar filter
@@ -188,6 +208,7 @@ research question:
 | Annotation | the research question's annotation (§2.5); empty if none |
 | Ground Truth (APA 7) | the test's ground truth as a plain-text APA 7 reference, repeated on each of its rows |
 | Ground Truth DOI | its DOI as `doi:10.1234/abcd9999`; empty if none |
+| Export Date | the research question's export date (§3.5) as `2026-10-02`, or `2026-10-01 to 2026-10-02`; empty if none |
 
 ### 4.2 HTML
 
@@ -198,8 +219,29 @@ complete, with warnings and with errors; research questions; references), and
 a table with one group per test: type, variant, research question, references
 found, the count in the file name (marked ≠ when it differs), status, and the
 test's issues underneath, followed by its key clashes (marked "Key clash", in
-a neutral colour). Annotations appear under their research questions, and the
-ground truth (with its italics) above the test's issues. It follows the system's light or dark appearance and
+a neutral colour). Annotations appear under their research questions, the
+ground truth (with its italics) above the test's issues, and the test's date
+(§3.5) under its ID.
+
+### 4.3 Markdown
+
+GitHub-flavoured Markdown, laid out for reading on GitHub, GitLab or a similar
+Git host (and readable as plain text):
+
+- a `#` title, the workspace name and export time, and a one-line summary;
+- an overview table (test, type, number of research questions, references per
+  research question, export date, ground truth as "Smith et al. (2024)",
+  status), whose test IDs link to the sections below;
+- a `##` section per test (its anchor is the ID in lowercase, `#abcd-123`):
+  status, type, references and date; the ground truth with its italics; a
+  table of research questions (variant, question, found, count in the file
+  name, marked ≠ when it differs, export date); then lists of annotations,
+  issues and key clashes, when there are any.
+
+Status is shown as ✅ Complete, ⚠️ Warnings or ❌ Errors, so it reads without
+colour. Text from the workspace is escaped (`|`, `*`, `_`, `<`, backticks and
+the like), so a research question can never break a table or turn into
+formatting or HTML; line breaks in table cells become `<br>`. It follows the system's light or dark appearance and
 has a print layout.
 
 ## 5. APA 7 references

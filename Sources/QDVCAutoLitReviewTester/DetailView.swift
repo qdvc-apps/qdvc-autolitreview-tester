@@ -94,6 +94,13 @@ private struct TestHeader: View {
             }
             Text(summary)
                 .foregroundStyle(.secondary)
+            if let date = test.dateText {
+                Label("Exported \(date)", systemImage: "calendar")
+                    .foregroundStyle(.secondary)
+                    .help(test.exportDates.count > 1
+                          ? "The variants\u{2019} BibTeX files were exported on different days"
+                          : "From the BibTeX file\u{2019}s EXPORT DATE")
+            }
             Text((test.folder.path as NSString).abbreviatingWithTildeInPath)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -224,6 +231,11 @@ private struct ReferenceCountRow: View {
     var body: some View {
         HStack(spacing: 6) {
             Label("References", systemImage: "number")
+            if let exportedText {
+                Text(exportedText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Spacer()
             Text(foundText)
                 .monospacedDigit()
@@ -242,6 +254,11 @@ private struct ReferenceCountRow: View {
                 EmptyView()
             }
         }
+    }
+
+    private var exportedText: String? {
+        guard question.exportDates.count > 0 else { return nil }
+        return "exported " + (ExportDate.longRange(question.exportDates) ?? "")
     }
 
     private var foundText: String {

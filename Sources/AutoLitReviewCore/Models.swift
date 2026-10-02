@@ -191,6 +191,8 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
     public var annotation: String?
     /// Where the annotation was read from, if it exists.
     public var annotationFile: URL?
+    /// The "EXPORT DATE:" dates in the BibTeX file, earliest first.
+    public var exportDates: [ExportDate] = []
 
     public init(testID: String, variant: Int?, question: String? = nil, files: [ArtifactFile] = [],
                 referencesFound: Int? = nil, referencesInFileName: Int? = nil, issues: [Issue] = [],
@@ -262,6 +264,16 @@ public struct TestRun: Hashable, Sendable, Identifiable {
     public func rowStatus(_ question: ResearchQuestion) -> Status {
         Status(issues: issues + question.issues)
     }
+
+    /// The export dates of all the test's BibTeX files, earliest first: the
+    /// test's date, or its range of dates.
+    public var exportDates: [ExportDate] {
+        Array(Set(questions.flatMap(\.exportDates))).sorted()
+    }
+
+    /// "2 October 2026" or "30 September – 2 October 2026"; nil when no
+    /// BibTeX file gives an export date.
+    public var dateText: String? { ExportDate.longRange(exportDates) }
 
     /// Total of the references found across all research questions.
     public var totalReferences: Int { questions.compactMap(\.referencesFound).reduce(0, +) }

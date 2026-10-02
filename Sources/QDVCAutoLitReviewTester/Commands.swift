@@ -41,6 +41,9 @@ struct TesterCommands: Commands {
             Button("Export as HTML\u{2026}") { model.export(.html) }
                 .keyboardShortcut("e", modifiers: [.command, .option, .shift])
                 .disabled(model.scan == nil)
+            Button("Export as Markdown\u{2026}") { model.export(.markdown) }
+                .keyboardShortcut("e", modifiers: [.command, .control, .shift])
+                .disabled(model.scan == nil)
             Divider()
             Button("Close Workspace") { model.closeWorkspace() }
                 .keyboardShortcut("w", modifiers: [.command, .shift])

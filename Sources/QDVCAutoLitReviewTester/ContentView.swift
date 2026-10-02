@@ -36,12 +36,13 @@ struct ContentView: View {
                         }
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
-                                Button("Export as CSV\u{2026}") { model.export(.csv) }
-                                Button("Export as HTML\u{2026}") { model.export(.html) }
+                                ForEach(ExportFormat.allCases, id: \.self) { format in
+                                    Button("Export as \(format.title)\u{2026}") { model.export(format) }
+                                }
                             } label: {
                                 Label("Export", systemImage: "square.and.arrow.up")
                             }
-                            .help("Export every test and research question as CSV or HTML")
+                            .help("Export every test and research question as CSV, HTML or Markdown")
                             .disabled(model.scan == nil)
                         }
                         ToolbarItem(placement: .primaryAction) {

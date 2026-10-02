@@ -10,6 +10,8 @@ Sources/AutoLitReviewCore/    Foundation-only model layer, unit-tested
   BibTeX.swift                the reference counter
   Scanner.swift               WorkspaceScanner: reads a workspace and checks it
   Export.swift                CSV and HTML exports
+  MarkdownExport.swift        GitHub-flavoured Markdown export
+  ExportDate.swift            "EXPORT DATE:" parsing and date ranges
   Reference.swift             BibTeX field parser, LaTeX to text, names, APA 7
   GroundTruth.swift           GroundTruth; WorkspaceWriter (ground truth, annotations)
   NewTest.swift               NewTestDraft, DropRouting, TestCreator
@@ -80,7 +82,11 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **Clashing citation keys are information, not issues** (FILE_FORMAT §3.4):
   they never change a status. Each occurrence is shown as `Key (line N)`, the
   line of the entry's `@`.
-- **Exports cover every test**, not just what the filters show.
+- **Exports cover every test**, not just what the filters show. All three
+  (CSV, HTML, Markdown) carry the same information.
+- **Export dates are calendar dates**, with no time zone, so a test's date
+  never shifts with the Mac's time zone (FILE_FORMAT §3.5). A missing export
+  date is never an issue.
 - **Artifacts open in their default apps**; there is no in-app preview.
 - Test IDs are A–Z, 0–9 and dashes only, everywhere.
 
@@ -99,8 +105,11 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **ReferenceTests** — field parsing (quotes, `#`, macros, comments), LaTeX
   to text, names (particles, suffixes, organisations), APA 7 for each entry
   type, 21+ authors, DOI normalisation, ground-truth problems.
-- **ExportTests** — CSV quoting and rows, HTML escaping and structure, key
-  clashes, annotations and the ground truth.
+- **ExportTests** — CSV quoting and rows, HTML escaping and structure, the
+  Markdown layout and escaping, key clashes, annotations, the ground truth
+  and export dates.
+- **ExportDateTests** — the date forms, finding dates anywhere in a file,
+  impossible dates, range formatting, and a test's range across variants.
 - **NewTestTests** — validation messages, planned names, creation (originals
   untouched, recounting, refusal of an existing ID, cleanup on failure) and
   drop routing.

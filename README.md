@@ -10,10 +10,12 @@ folder per test run, named like `ABCD-123`) and the app:
   and the report DOM;
 - counts the entries in every `.bib` file and checks them against the count in
   its name (`ABCD-123_references_n293.bib` must hold 293 references);
-- lists every test with its research questions and reference counts, and
-  opens any artifact in its default app with a double-click;
+- lists every test with its research questions, reference counts and **date**
+  (the `EXPORT DATE` in its BibTeX files, or their range across variants),
+  and opens any artifact in its default app with a double-click;
 - exports the sheet of tests, research questions and reference counts as
-  **CSV** or as a **self-contained single-page HTML** report;
+  **CSV**, a **self-contained single-page HTML** report, or **Markdown**
+  laid out for reading on GitHub or a similar Git host;
 - sets up a **new test**: type the ID and the research questions, drop the
   files, and it copies them into a new folder under the standard names.
   The originals are never moved or changed.
@@ -54,8 +56,8 @@ a detail pane.
   and press ⌘↓) to open it in its default app; right-click to reveal it in
   Finder or copy its path.
 - **Search** (⌘F, in the toolbar) filters by test ID or research question.
-- **Export** (the toolbar's share button, ⇧⌘E for CSV, ⌥⇧⌘E for HTML) writes
-  every test in the workspace.
+- **Export** (the toolbar's share button; ⇧⌘E for CSV, ⌥⇧⌘E for HTML,
+  ⌃⇧⌘E for Markdown) writes every test in the workspace.
 - **New Test** (⌘N, or the + button) — enter the test ID (A–Z, 0–9 and dashes;
   lowercase letters are capitalised as you type, spaces are refused), choose
   Single RQ or Multiple RQs, type each research question and drop its five
@@ -149,7 +151,7 @@ built by `scripts/build-app.sh`, but not when you use `swift run`.
 | ⇧⌘W | Close workspace |
 | ⌘F | Search |
 | ⌘R | Refresh |
-| ⇧⌘E / ⌥⇧⌘E | Export as CSV / HTML |
+| ⇧⌘E / ⌥⇧⌘E / ⌃⇧⌘E | Export as CSV / HTML / Markdown |
 | ⌘↓ | Open the report PDF of the selected research question |
 | ⇧⌘C | Copy the selected research question |
 | ⌥⇧⌘C | Copy all of the test's research questions |

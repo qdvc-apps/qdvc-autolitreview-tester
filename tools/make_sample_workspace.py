@@ -12,6 +12,10 @@ every kind of result the app reports.
               and variant 4 has no response screenshot (error)
     DEMO-110  single RQ, complete, with no references found (n0)
 
+Every BibTeX file starts with a Scopus-style "EXPORT DATE:" line, so each
+test has a date; DEMO-102's variants were exported on three different days,
+so its date is a range.
+
 DEMO-101 and DEMO-102 also have a ground truth (DEMO-1xx_ground_truth.bib),
 and two of DEMO-102's research questions have annotations; both are
 optional and don't change a test's status.
@@ -94,9 +98,10 @@ def html(title, question):
             f"<body><h1>{title}</h1><p>{question}</p><p>Generated literature review (sample).</p></body></html>\n")
 
 
-def bibtex(count, seed):
+def bibtex(count, seed, exported="02 October 2026"):
+    header = f"Scopus\nEXPORT DATE: {exported}\n\n"
     if count == 0:
-        return "% The tool returned no references for this research question.\n"
+        return header + "% The tool returned no references for this research question.\n"
     entries = []
     for i in range(count):
         author = AUTHORS[(seed + i) % len(AUTHORS)]
@@ -109,7 +114,7 @@ def bibtex(count, seed):
             f"  journal = {{{venue}}},\n"
             f"  year = {{{year}}},\n"
             f"}}\n")
-    return "\n".join(entries)
+    return header + "\n".join(entries)
 
 
 # --------------------------------------------------------------------------
@@ -138,7 +143,7 @@ def single(test_id, question, refs, named=None, skip=()):
             write(path, data)
 
 
-def variant(test_id, number, question, refs, old_names=False, skip=()):
+def variant(test_id, number, question, refs, old_names=False, skip=(), exported="02 October 2026"):
     folder = WORKSPACE / test_id
     query_name = f"{test_id}_variant{number}" if old_names else f"{test_id}_query_variant{number}"
     query = folder / query_name
@@ -149,7 +154,7 @@ def variant(test_id, number, question, refs, old_names=False, skip=()):
         "query": (query / f"{prefix}query_asked.png", png(rgb=(110, 140, 175))),
         "response": (query / f"{prefix}response_received.png", png(rgb=(120, 165, 140))),
         "rq": (query / f"{prefix}RQ_asked.md", question + "\n"),
-        "bib": (folder / f"{top_prefix}references_n{refs}.bib", bibtex(refs, number * 7 + len(test_id))),
+        "bib": (folder / f"{top_prefix}references_n{refs}.bib", bibtex(refs, number * 7 + len(test_id), exported)),
         "pdf": (folder / f"{prefix}report.pdf", pdf(title)),
         "dom": (folder / f"{prefix}report_DOM.html", html(title, question)),
     }
@@ -165,8 +170,10 @@ def main():
 
     single("DEMO-101", "What are the reported effects of remote work on software developer productivity?", 12)
 
-    variant("DEMO-102", 1, "How do organisations govern the use of generative AI in knowledge work?", 8)
-    variant("DEMO-102", 2, "What governance mechanisms do organisations use for generative AI tools?", 5)
+    variant("DEMO-102", 1, "How do organisations govern the use of generative AI in knowledge work?", 8,
+            exported="30 September 2026")
+    variant("DEMO-102", 2, "What governance mechanisms do organisations use for generative AI tools?", 5,
+            exported="01 October 2026")
     variant("DEMO-102", 3, "Which policies, roles and controls guide employee use of generative AI?", 11)
 
     write(WORKSPACE / "DEMO-101" / "DEMO-101_ground_truth.bib", """@article{okafor2023remote,

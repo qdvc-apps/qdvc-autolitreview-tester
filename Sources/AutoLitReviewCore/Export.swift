@@ -8,7 +8,7 @@ public enum Exporter {
     public static let csvColumns = [
         "Test ID", "Type", "Variant", "Research Question", "References Found",
         "References in File Name", "Count Matches", "Status", "Issues", "Citation Key Clashes",
-        "Annotation", "Ground Truth (APA 7)", "Ground Truth DOI",
+        "Annotation", "Ground Truth (APA 7)", "Ground Truth DOI", "Export Date",
     ]
 
     /// RFC 4180 CSV: a header row, then one row per research question, CRLF
@@ -38,6 +38,7 @@ public enum Exporter {
                     question.annotation ?? "",
                     test.groundTruth?.reference?.plain ?? "",
                     test.groundTruth?.doi ?? "",
+                    ExportDate.isoRange(question.exportDates) ?? "",
                 ]))
             }
         }
@@ -145,16 +146,17 @@ public enum Exporter {
         let hasClashes = test.questions.contains { !$0.keyClashes.isEmpty }
         let hasNotes = !allIssues.isEmpty || hasClashes || test.groundTruth?.reference != nil
         let span = test.questions.count + (hasNotes ? 1 : 0)
+        let dateLine = test.dateText.map { "<span class=\"date\">\(escape($0))</span>" } ?? ""
         var html = "<tbody class=\"test\">\n"
         if test.questions.isEmpty {
-            html += "<tr><th scope=\"rowgroup\" class=\"id\"\(span > 1 ? " rowspan=\"2\"" : "")>\(escape(test.id))</th>"
+            html += "<tr><th scope=\"rowgroup\" class=\"id\"\(span > 1 ? " rowspan=\"2\"" : "")>\(escape(test.id))\(dateLine)</th>"
             html += "<td>\(escape(test.kind.title))</td><td colspan=\"4\" class=\"none\">No research questions found</td>"
             html += "<td>\(statusCell(test.status))</td></tr>\n"
         }
         for (index, question) in test.questions.enumerated() {
             html += "<tr>"
             if index == 0 {
-                html += "<th scope=\"rowgroup\" class=\"id\"\(span > 1 ? " rowspan=\"\(span)\"" : "")>\(escape(test.id))</th>"
+                html += "<th scope=\"rowgroup\" class=\"id\"\(span > 1 ? " rowspan=\"\(span)\"" : "")>\(escape(test.id))\(dateLine)</th>"
             }
             html += "<td class=\"type\">\(index == 0 ? escape(test.kind.title) : "")</td>"
             html += "<td class=\"variant\">\(question.variant.map(String.init) ?? "\u{2013}")</td>"
@@ -281,6 +283,7 @@ public enum Exporter {
     tbody.test { border-bottom: 1px solid var(--rule); }
     td, tbody th { padding: 9px 10px; vertical-align: top; text-align: left; }
     tbody th.id { font-weight: 650; white-space: nowrap; }
+    tbody th.id .date { display: block; font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
     td.type, td.variant { color: var(--muted); white-space: nowrap; }
     td.rq { font-family: var(--serif); font-size: 16px; line-height: 1.5; max-width: 60ch; }
     td.none, td.rq.none { color: var(--muted); font-style: italic; font-family: var(--sans); font-size: 14px; }

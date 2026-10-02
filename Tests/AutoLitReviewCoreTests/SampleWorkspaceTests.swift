@@ -33,6 +33,8 @@ final class SampleWorkspaceTests: XCTestCase {
         XCTAssertEqual(scan.test("DEMO-102")?.groundTruth?.shortCitation, "Haddad & Silva (2024)")
         XCTAssertEqual(scan.test("DEMO-102")?.questions.map { $0.annotation != nil }, [true, true, false])
         XCTAssertNil(scan.test("DEMO-103")?.groundTruth)
+        XCTAssertEqual(scan.test("DEMO-101")?.dateText, "2 October 2026")
+        XCTAssertEqual(scan.test("DEMO-102")?.dateText, "30 September \u{2013} 2 October 2026")
 
         for test in scan.tests where test.status == .complete {
             XCTAssertTrue(test.allIssues.isEmpty, "\(test.id): \(test.allIssues)")

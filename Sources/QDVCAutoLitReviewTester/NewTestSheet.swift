@@ -78,11 +78,15 @@ struct NewTestSheet: View {
 
                 Section {
                     DisclosureGroup("Files to be created") {
-                        ForEach(plannedPaths, id: \.self) { path in
-                            Text(path)
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(plannedPaths, id: \.self) { path in
+                                Text(path)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .multilineTextAlignment(.leading)
+                                    .textSelection(.enabled)
+                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }

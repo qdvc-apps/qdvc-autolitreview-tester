@@ -44,6 +44,11 @@ struct TestsTableView: View {
             }
             .width(min: 40, ideal: 50, max: 70)
 
+            TableColumn("Export Date", value: \.dateRank) { row in
+                Text(row.date).lineLimit(1).monospacedDigit().help(row.date)
+            }
+            .width(min: 80, ideal: 120)
+
             TableColumn("Ground Truth", value: \.groundTruth) { row in
                 Text(row.groundTruth).lineLimit(1).foregroundStyle(.secondary).help(row.groundTruth)
             }
@@ -112,6 +117,11 @@ struct QuestionsTableView: View {
                 }
             }
             .width(min: 40, ideal: 48, max: 60)
+
+            TableColumn("Export Date", value: \.dateRank) { row in
+                Text(row.date).lineLimit(1).monospacedDigit().help(row.date)
+            }
+            .width(min: 80, ideal: 110)
 
             TableColumn("Annotation", value: \.annotation) { row in
                 Text(row.annotation).lineLimit(1).foregroundStyle(.secondary).help(row.annotation)

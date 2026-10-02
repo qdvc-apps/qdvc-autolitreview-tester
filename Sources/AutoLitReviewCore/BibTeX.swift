@@ -46,6 +46,9 @@ public struct BibTeXSummary: Hashable, Sendable {
     public var entriesWithoutKey: Int = 0
     /// True when the file ends inside an entry (its braces don't balance).
     public var endsInsideEntry: Bool = false
+    /// The distinct dates after "EXPORT DATE:" in the file, earliest first
+    /// (usually one, from the exporter's header).
+    public var exportDates: [ExportDate] = []
 
     public init() {}
 }
@@ -141,6 +144,7 @@ public enum BibTeX {
             guard let occurrences = occurrencesByKey[folded], occurrences.count > 1 else { return nil }
             return KeyClash(occurrences: occurrences)
         }
+        result.exportDates = ExportDate.find(in: text)
         return result
     }
 

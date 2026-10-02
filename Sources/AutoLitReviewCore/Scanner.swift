@@ -365,6 +365,7 @@ private struct TestScanner {
             return
         }
         question.referencesFound = summary.entries
+        question.exportDates = summary.exportDates
         if let named = candidate.countInName, named != summary.entries {
             question.issues.append(.error("\(path): the file name says \(TextSupport.plural(named, "reference")), "
                                           + "but the file has \(summary.entries)"))

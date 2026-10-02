@@ -58,12 +58,33 @@ enum TestFilter: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
-enum ExportFormat {
-    case csv, html
+enum ExportFormat: CaseIterable {
+    case csv, html, markdown
 
-    var title: String { self == .csv ? "CSV" : "HTML" }
-    var fileExtension: String { self == .csv ? "csv" : "html" }
-    var contentType: UTType { self == .csv ? .commaSeparatedText : .html }
+    var title: String {
+        switch self {
+        case .csv: return "CSV"
+        case .html: return "HTML"
+        case .markdown: return "Markdown"
+        }
+    }
+
+    var fileExtension: String {
+        switch self {
+        case .csv: return "csv"
+        case .html: return "html"
+        case .markdown: return "md"
+        }
+    }
+
+    var contentType: UTType {
+        switch self {
+        case .csv: return .commaSeparatedText
+        case .html: return .html
+        case .markdown: return UTType("net.daringfireball.markdown")
+            ?? UTType(filenameExtension: "md", conformingTo: .plainText) ?? .plainText
+        }
+    }
 }
 
 /// A value snapshot of one Tests-tab row. The `…Rank` values are what the
@@ -81,6 +102,9 @@ struct TestRow: Identifiable, Hashable {
     let issueCount: Int
     /// "Smith et al. (2024)", or "" when there is no ground truth.
     let groundTruth: String
+    /// The export date or range ("" when unknown), and the ISO form to sort by.
+    let date: String
+    let dateRank: String
 
     init(_ test: TestRun) {
         id = test.id
@@ -94,6 +118,8 @@ struct TestRow: Identifiable, Hashable {
         statusRank = test.status.rawValue
         issueCount = test.allIssues.count
         groundTruth = test.groundTruth?.shortCitation ?? (test.groundTruth == nil ? "" : "\u{2013}")
+        date = test.dateText ?? ""
+        dateRank = ExportDate.isoRange(test.exportDates) ?? ""
     }
 }
 
@@ -114,6 +140,8 @@ struct QuestionRow: Identifiable, Hashable {
     let clashCount: Int
     /// The annotation on one line ("" when there is none).
     let annotation: String
+    let date: String
+    let dateRank: String
     let status: Status
     let statusRank: Int
 
@@ -131,6 +159,8 @@ struct QuestionRow: Identifiable, Hashable {
         matchRank = question.countMatches.map { $0 ? 2 : 0 } ?? 1
         clashCount = question.keyClashes.count
         annotation = (question.annotation ?? "").split(whereSeparator: \.isNewline).joined(separator: " ")
+        date = ExportDate.longRange(question.exportDates) ?? ""
+        dateRank = ExportDate.isoRange(question.exportDates) ?? ""
         let rowStatus = test.rowStatus(question)
         status = rowStatus
         statusRank = rowStatus.rawValue
@@ -639,6 +669,8 @@ final class AppModel {
             data = Exporter.csvData(scan.tests)
         case .html:
             data = Data(Exporter.html(scan.tests, workspaceName: root.lastPathComponent, generated: Date()).utf8)
+        case .markdown:
+            data = Data(Exporter.markdown(scan.tests, workspaceName: root.lastPathComponent, generated: Date()).utf8)
         }
         do {
             try data.write(to: url, options: .atomic)
