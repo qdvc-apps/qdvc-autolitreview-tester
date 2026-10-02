@@ -27,6 +27,9 @@ public struct GroundTruth: Hashable, Sendable {
     /// `doi:10.1234/abcd`, if the entry has a DOI.
     public var doi: String? { entry.flatMap(APA7.doi(of:)) }
 
+    /// The DOI alone, `10.1234/abcd` (what Copy DOI puts on the pasteboard).
+    public var bareDOI: String? { doi.map { String($0.dropFirst("doi:".count)) } }
+
     /// "Smith et al. (2024)".
     public var shortCitation: String? { entry.map(APA7.shortCitation) }
 

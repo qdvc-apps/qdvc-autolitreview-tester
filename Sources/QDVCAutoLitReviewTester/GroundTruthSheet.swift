@@ -55,9 +55,9 @@ struct GroundTruthSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                         HStack(spacing: 6) {
                             Text("DOI").foregroundStyle(.secondary)
-                            Text(preview.doi ?? "none in the entry")
+                            Text(preview.bareDOI ?? "none in the entry")
                                 .textSelection(.enabled)
-                                .foregroundStyle(preview.doi == nil ? Color.secondary : Color.primary)
+                                .foregroundStyle(preview.bareDOI == nil ? Color.secondary : Color.primary)
                         }
                         .font(.callout)
                     }

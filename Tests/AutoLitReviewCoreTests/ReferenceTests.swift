@@ -142,5 +142,9 @@ final class ReferenceTests: XCTestCase {
         XCTAssertEqual(two.entry?.key, "a")
         XCTAssertTrue(two.problem?.contains("2 entries") ?? false)
         XCTAssertNil(GroundTruth(source: "@article{a, title={A}}").doi)
+        let withDOI = GroundTruth(source: "@article{a, title={A}, doi={https://doi.org/10.1234/abcd9999}}")
+        XCTAssertEqual(withDOI.doi, "doi:10.1234/abcd9999")
+        XCTAssertEqual(withDOI.bareDOI, "10.1234/abcd9999")
+        XCTAssertNil(GroundTruth(source: "@article{a, title={A}}").bareDOI)
     }
 }

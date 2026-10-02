@@ -70,7 +70,12 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
   the app goes to the background or quits or the workspace closes
   (`AppModel.flushAnnotations`). A draft is kept until a scan shows the same
   text on disk; if the file changed elsewhere meanwhile, the file wins.
-- **The ground truth's DOI is `doi:10.…`**, never a URL (FILE_FORMAT §5).
+- **The ground truth's DOI is `doi:10.…`** in the reference, never a URL
+  (FILE_FORMAT §5); Copy DOI copies it without the `doi:` prefix.
+- **The Markdown export defaults to README.md in the workspace**, and its
+  links are relative to the folder it is saved in (`Exporter.relativeLink`).
+- The inspector calls a multi-RQ test "Multiple variants"; the tables,
+  sidebar and exports keep "Multiple RQs".
 - **New Test never changes the originals**: it copies, assembles under a
   hidden name and renames into place, and removes the hidden folder on
   failure. It recounts the BibTeX file at creation time.

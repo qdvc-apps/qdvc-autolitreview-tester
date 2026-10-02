@@ -149,6 +149,47 @@ final class ExportTests: XCTestCase {
         XCTAssertFalse(md.contains("<how>"))
     }
 
+    func testMarkdownLinksToArtifacts() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "L-1")
+        try ws.write("L-1/L-1_ground_truth.bib", "@article{t, author={Lee, Kim}, title={T}, year={2020}}")
+        try ws.write("L-1/L-1_query/L-1_annotation.md", "Note")
+        try writeVariant(ws, "L-2", 1)
+        try writeVariant(ws, "L-2", 2, skip: ["dom"])
+        let tests = try WorkspaceScanner.scan(ws.url).tests
+
+        // Saved in the workspace as README.md: links start with the test folder.
+        let md = Exporter.markdown(tests, workspaceName: "w", generated: Date(), linkBase: ws.url)
+        XCTAssertTrue(md.contains("\n## L-1\n\n"))
+        XCTAssertTrue(md.contains("**Folder:** [L-1/](L-1/)\n\n"))
+        XCTAssertTrue(md.contains("**Ground truth:** Lee, K. (2020). T. ([BibTeX](L-1/L-1_ground_truth.bib))\n\n"))
+        XCTAssertTrue(md.contains("**Files:** [query screenshot](L-1/L-1_query/L-1_query_asked.png), "
+            + "[response screenshot](L-1/L-1_query/L-1_response_received.png), "
+            + "[research question](L-1/L-1_query/L-1_RQ_asked.md), [references file](L-1/L-1_references_n3.bib), "
+            + "[report PDF](L-1/L-1_report.pdf), [report DOM (HTML)](L-1/L-1_report_DOM.html), "
+            + "[annotation](L-1/L-1_query/L-1_annotation.md)\n\n"))
+        XCTAssertTrue(md.contains("**Files**\n\n- Variant 1: [query screenshot](L-2/L-2_query_variant1/L-2_variant1_query_asked.png), "))
+        XCTAssertTrue(md.contains("- Variant 2: [query screenshot](L-2/L-2_query_variant2/L-2_variant2_query_asked.png), "))
+        XCTAssertTrue(md.contains("[report PDF](L-2/L-2_variant2_report.pdf)\n"))
+        XCTAssertFalse(md.contains("L-2_variant2_report_DOM.html)"))
+
+        // Saved elsewhere, the links climb back to the workspace.
+        try ws.makeFolder("exports")
+        let elsewhere = Exporter.markdown(tests, workspaceName: "w", generated: Date(),
+                                          linkBase: ws.url.appendingPathComponent("exports", isDirectory: true))
+        XCTAssertTrue(elsewhere.contains("**Folder:** [L-1/](../L-1/)\n\n"))
+        XCTAssertTrue(elsewhere.contains("[report PDF](../L-1/L-1_report.pdf)"))
+
+        // Without a base there are no links.
+        XCTAssertFalse(Exporter.markdown(tests, workspaceName: "w", generated: Date()).contains("**Folder:**"))
+    }
+
+    func testRelativeLinksAreEncoded() throws {
+        let ws = try TempFolder()
+        let file = try ws.write("Odd (1) [v2].pdf", "x")
+        XCTAssertEqual(Exporter.relativeLink(from: ws.url, to: file), "Odd%20%281%29%20%5Bv2%5D.pdf")
+    }
+
     func testEmptyWorkspaceMarkdown() {
         let md = Exporter.markdown([], workspaceName: "Empty", generated: Date())
         XCTAssertTrue(md.hasSuffix("This workspace has no tests yet.\n"))

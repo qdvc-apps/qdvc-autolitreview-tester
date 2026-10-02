@@ -15,7 +15,8 @@ folder per test run, named like `ABCD-123`) and the app:
   and opens any artifact in its default app with a double-click;
 - exports the sheet of tests, research questions and reference counts as
   **CSV**, a **self-contained single-page HTML** report, or **Markdown**
-  laid out for reading on GitHub or a similar Git host;
+  laid out for reading on GitHub or a similar Git host (saved as the
+  workspace's `README.md` by default, with links to every test's files);
 - sets up a **new test**: type the ID and the research questions, drop the
   files, and it copies them into a new folder under the standard names.
   The originals are never moved or changed.
@@ -50,7 +51,7 @@ a detail pane.
   asking the same research questions (Edit… or Add… in the inspector, ⇧⌘G).
   It is shown as an APA 7 reference with the DOI written `doi:10.1234/abcd`,
   and **Copy Reference** (rich text, so italics survive a paste) or **Copy
-  DOI** copy it.
+  DOI** copy it (the DOI alone, without the `doi:` prefix).
 - **Annotations** — a brief note on each research question, typed in the
   inspector and saved automatically. Double-click a file (or select it
   and press ⌘↓) to open it in its default app; right-click to reveal it in

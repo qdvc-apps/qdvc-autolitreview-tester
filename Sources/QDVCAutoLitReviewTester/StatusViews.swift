@@ -19,6 +19,16 @@ extension Status {
     }
 }
 
+extension TestKind {
+    /// How the inspector names the kind: "Single RQ" or "Multiple variants".
+    var inspectorTitle: String {
+        switch self {
+        case .single: return "Single RQ"
+        case .multi: return "Multiple variants"
+        }
+    }
+}
+
 extension Severity {
     var systemImage: String { self == .error ? "xmark.octagon.fill" : "exclamationmark.triangle.fill" }
     var color: Color { self == .error ? .red : .orange }

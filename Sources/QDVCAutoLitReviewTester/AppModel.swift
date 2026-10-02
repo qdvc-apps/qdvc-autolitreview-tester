@@ -559,9 +559,9 @@ final class AppModel {
         Platform.copy(reference)
     }
 
-    /// The ground truth's DOI as `doi:10.1234/abcd`.
+    /// The ground truth's DOI alone, `10.1234/abcd` (no `doi:` prefix).
     func copyGroundTruthDOI(_ test: TestRun?) {
-        guard let doi = test?.groundTruth?.doi else { return }
+        guard let doi = test?.groundTruth?.bareDOI else { return }
         Platform.copy(doi)
     }
 
@@ -660,8 +660,16 @@ final class AppModel {
         panel.allowedContentTypes = [format.contentType]
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
-        panel.nameFieldStringValue = "\(root.lastPathComponent)-tests-\(Naming.dateStamp(Date())).\(format.fileExtension)"
-        panel.message = "Exports every test in the workspace, one row per research question."
+        if format == .markdown {
+            // Meant to sit at the top of the workspace as its README, so the
+            // links to each test's files work on GitHub and the like.
+            panel.nameFieldStringValue = "README.md"
+            panel.directoryURL = root
+            panel.message = "Exports every test as Markdown, with links to its files. Save it in the workspace folder as README.md for the links to work on GitHub."
+        } else {
+            panel.nameFieldStringValue = "\(root.lastPathComponent)-tests-\(Naming.dateStamp(Date())).\(format.fileExtension)"
+            panel.message = "Exports every test in the workspace, one row per research question."
+        }
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let data: Data
         switch format {
@@ -670,7 +678,8 @@ final class AppModel {
         case .html:
             data = Data(Exporter.html(scan.tests, workspaceName: root.lastPathComponent, generated: Date()).utf8)
         case .markdown:
-            data = Data(Exporter.markdown(scan.tests, workspaceName: root.lastPathComponent, generated: Date()).utf8)
+            data = Data(Exporter.markdown(scan.tests, workspaceName: root.lastPathComponent, generated: Date(),
+                                          linkBase: url.deletingLastPathComponent()).utf8)
         }
         do {
             try data.write(to: url, options: .atomic)

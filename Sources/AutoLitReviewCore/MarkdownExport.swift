@@ -7,8 +7,13 @@ extension Exporter {
     /// questions, the annotations, issues and key clashes. Status is shown
     /// with an emoji and a word, so it reads without colour. Text from the
     /// workspace is escaped, so it can never turn into Markdown or HTML.
+    ///
+    /// With `linkBase` (the folder the Markdown file is saved in, usually the
+    /// workspace itself, as README.md), each test's section links to its
+    /// folder and to every artifact found, by relative paths, so the links
+    /// work on GitHub and in a local clone alike.
     public static func markdown(_ tests: [TestRun], workspaceName: String, generated: Date,
-                                timeZone: TimeZone = .current) -> String {
+                                timeZone: TimeZone = .current, linkBase: URL? = nil) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = timeZone
@@ -42,7 +47,7 @@ extension Exporter {
         md += "\n"
 
         for test in tests {
-            md += section(test)
+            md += section(test, linkBase: linkBase)
         }
         md += "---\n\n"
         md += "Exported by QDVC Auto Lit Review Tester. References are counted as BibTeX entries, not counting "
@@ -51,15 +56,24 @@ extension Exporter {
         return md
     }
 
-    private static func section(_ test: TestRun) -> String {
+    private static func section(_ test: TestRun, linkBase: URL?) -> String {
         var md = "## \(inline(test.id))\n\n"
         var facts = [statusText(test.status), test.kind.title,
                      TextSupport.plural(test.totalReferences, "reference")]
         if let date = test.dateText { facts.append("exported \(date)") }
         md += facts.joined(separator: ", ") + "\n\n"
 
-        if let reference = test.groundTruth?.reference {
-            md += "**Ground truth:** \(markdown(reference))\n\n"
+        if let base = linkBase {
+            let folder = relativeLink(from: base, to: test.folder) + "/"
+            md += "**Folder:** [\(inline(test.id))/](\(folder))\n\n"
+        }
+
+        if let truth = test.groundTruth, let reference = truth.reference {
+            md += "**Ground truth:** \(markdown(reference))"
+            if let base = linkBase, let url = truth.url {
+                md += " ([BibTeX](\(relativeLink(from: base, to: url))))"
+            }
+            md += "\n\n"
         }
 
         let multi = test.kind == .multi
@@ -80,6 +94,10 @@ extension Exporter {
             md += row
         }
         md += "\n"
+
+        if let base = linkBase {
+            md += filesList(test, base: base)
+        }
 
         let annotated = test.questions.filter { $0.annotation != nil }
         if !annotated.isEmpty {
@@ -114,6 +132,44 @@ extension Exporter {
             md += "\n"
         }
         return md
+    }
+
+    /// Links to each research question's artifacts (and annotation), in
+    /// the standard order; missing ones are left out (they are in Issues).
+    private static func filesList(_ test: TestRun, base: URL) -> String {
+        func links(_ question: ResearchQuestion) -> String {
+            var items = ArtifactKind.allCases.compactMap { kind -> String? in
+                guard let file = question.file(kind) else { return nil }
+                return "[\(inline(kind.noun))](\(relativeLink(from: base, to: file.url)))"
+            }
+            if let annotation = question.annotationFile {
+                items.append("[annotation](\(relativeLink(from: base, to: annotation)))")
+            }
+            return items.joined(separator: ", ")
+        }
+        if test.kind == .single, let question = test.questions.first {
+            let list = links(question)
+            return list.isEmpty ? "" : "**Files:** \(list)\n\n"
+        }
+        let lines = test.questions.compactMap { question -> String? in
+            let list = links(question)
+            return list.isEmpty ? nil : "- Variant \(question.variant.map(String.init) ?? "?"): \(list)\n"
+        }
+        return lines.isEmpty ? "" : "**Files**\n\n" + lines.joined() + "\n"
+    }
+
+    /// The path from the folder `base` to `target`, with `..` where needed,
+    /// each part percent-encoded (spaces, parentheses and the like), for a
+    /// Markdown link.
+    public static func relativeLink(from base: URL, to target: URL) -> String {
+        let from = base.standardizedFileURL.resolvingSymlinksInPath().pathComponents
+        let to = target.standardizedFileURL.resolvingSymlinksInPath().pathComponents
+        var common = 0
+        while common < from.count, common < to.count, from[common] == to[common] { common += 1 }
+        let parts = Array(repeating: "..", count: from.count - common) + to[common...]
+        var allowed = CharacterSet.urlPathAllowed
+        allowed.remove(charactersIn: "/()[]<> ")
+        return parts.map { $0.addingPercentEncoding(withAllowedCharacters: allowed) ?? $0 }.joined(separator: "/")
     }
 
     private static func statusText(_ status: Status) -> String {

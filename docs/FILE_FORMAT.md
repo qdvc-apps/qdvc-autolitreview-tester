@@ -233,10 +233,18 @@ Git host (and readable as plain text):
   research question, export date, ground truth as "Smith et al. (2024)",
   status), whose test IDs link to the sections below;
 - a `##` section per test (its anchor is the ID in lowercase, `#abcd-123`):
-  status, type, references and date; the ground truth with its italics; a
-  table of research questions (variant, question, found, count in the file
-  name, marked ≠ when it differs, export date); then lists of annotations,
-  issues and key clashes, when there are any.
+  status, type, references and date; a link to the test folder; the ground
+  truth with its italics and a link to its BibTeX file; a table of research
+  questions (variant, question, found, count in the file name, marked ≠ when
+  it differs, export date); links to every artifact found (per variant for a
+  multi-RQ test, and the annotation files); then lists of annotations, issues
+  and key clashes, when there are any.
+
+The export is meant to be saved at the top of the workspace as **README.md**
+(the Save panel suggests exactly that), so a Git host shows it on the
+workspace's front page. The links are relative to wherever it is saved, with
+`../` if that is outside the workspace, and percent-encoded, so they work on
+GitHub, GitLab and in a local clone.
 
 Status is shown as ✅ Complete, ⚠️ Warnings or ❌ Errors, so it reads without
 colour. Text from the workspace is escaped (`|`, `*`, `_`, `<`, backticks and
@@ -276,7 +284,7 @@ a pragmatic formatter for the common entry types, not a full CSL engine.
 
 Copying the reference puts rich text (RTF and HTML, so italics survive a paste
 into Word, Pages or Mail) and plain text on the pasteboard; copying the DOI
-puts just `doi:…`.
+puts just the DOI, without the `doi:` prefix (`10.1234/abcd9999`).
 
 ## 6. New tests
 

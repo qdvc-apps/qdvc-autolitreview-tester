@@ -112,7 +112,7 @@ private struct TestHeader: View {
     }
 
     private var summary: String {
-        var parts = [test.kind.title, TextSupport.plural(test.totalReferences, "reference")]
+        var parts = [test.kind.inspectorTitle, TextSupport.plural(test.totalReferences, "reference")]
         let issues = test.allIssues
         let errors = issues.filter { $0.severity == .error }.count
         let warnings = issues.count - errors
@@ -207,7 +207,7 @@ private struct GroundTruthRows: View {
                     .help("Copy the APA 7 reference (italics kept when pasted into Word, Pages or Mail)")
                 CopyButton(title: "Copy DOI") { model.copyGroundTruthDOI(test) }
                     .disabled(truth.doi == nil)
-                    .help(truth.doi.map { "Copy \($0)" } ?? "The entry has no DOI")
+                    .help(truth.bareDOI.map { "Copy \($0)" } ?? "The entry has no DOI")
                 Spacer()
                 Button("Edit\u{2026}") { model.beginEditGroundTruth(test) }
             }
