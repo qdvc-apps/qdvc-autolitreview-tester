@@ -333,10 +333,8 @@ private struct TestScanner {
         if summary.endsInsideEntry {
             question.issues.append(.warning("\(path) ends inside an entry; check for unbalanced braces"))
         }
-        if !summary.duplicateKeys.isEmpty {
-            question.issues.append(.warning("\(path) has duplicate citation keys: "
-                                            + TextSupport.list(summary.duplicateKeys, limit: 5)))
-        }
+        // Clashing keys are listed, not raised as a problem (docs/FILE_FORMAT.md §3.4).
+        question.keyClashes = summary.keyClashes
         if summary.entriesWithoutKey > 0 {
             question.issues.append(.warning("\(path) has \(TextSupport.plural(summary.entriesWithoutKey, "entry", "entries")) without a citation key"))
         }

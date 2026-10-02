@@ -1,13 +1,47 @@
 import Foundation
 
-/// What `BibTeX.count` found in a .bib file.
+/// One entry's citation key and the line its entry starts on.
+public struct KeyOccurrence: Hashable, Sendable {
+    /// The key as written in the file.
+    public let key: String
+    /// The 1-based line of the entry's `@`.
+    public let line: Int
+
+    public init(key: String, line: Int) {
+        self.key = key
+        self.line = line
+    }
+
+    /// "Smith2025 (line 94)".
+    public var description: String { "\(key) (line \(line))" }
+}
+
+/// A citation key shared by two or more entries. Keys are compared without
+/// regard to case, as biber does, so `Smith2025` and `smith2025` clash.
+public struct KeyClash: Hashable, Sendable {
+    /// Every entry with the key, in file order (at least two).
+    public let occurrences: [KeyOccurrence]
+
+    public init(occurrences: [KeyOccurrence]) {
+        self.occurrences = occurrences
+    }
+
+    /// The key as first written.
+    public var key: String { occurrences.first?.key ?? "" }
+
+    /// "Smith2025 (line 94) and Smith2025 (line 255)".
+    public var description: String { TextSupport.list(occurrences.map(\.description)) }
+}
+
+/// What `BibTeX.summary` found in a .bib file.
 public struct BibTeXSummary: Hashable, Sendable {
     /// Bibliographic entries: every `@type{key, …}` or `@type(key, …)` except
     /// `@string`, `@preamble` and `@comment`.
     public var entries: Int = 0
-    /// Citation keys used more than once (compared without regard to case,
-    /// as biber does), each listed once, in the order the repeat was found.
-    public var duplicateKeys: [String] = []
+    /// Citation keys shared by separate entries, in the order of each key's
+    /// first entry. The tool under test produces these, so they are reported
+    /// for information rather than as a problem.
+    public var keyClashes: [KeyClash] = []
     /// Entries with no citation key, as in `@article{, title = …}`.
     public var entriesWithoutKey: Int = 0
     /// True when the file ends inside an entry (its braces don't balance).
@@ -28,14 +62,23 @@ public enum BibTeX {
 
     public static func summary(of text: String) -> BibTeXSummary {
         var result = BibTeXSummary()
-        var seenKeys = Set<String>()
-        var reportedKeys = Set<String>()
+        var occurrencesByKey: [String: [KeyOccurrence]] = [:]
+        var keyOrder: [String] = []
         let s = Array(text.unicodeScalars)
         let n = s.count
         var i = 0
+        // Line numbers: `line` is the line of `s[lineCursor]`, which only
+        // moves forward, so the whole file is walked once.
+        var line = 1
+        var lineCursor = 0
 
         while i < n {
             guard s[i] == "@" else { i += 1; continue }
+            while lineCursor < i {
+                if s[lineCursor] == "\n" { line += 1 }
+                lineCursor += 1
+            }
+            let entryLine = line
             i += 1
 
             // The entry type (letters, digits, underscores), which BibTeX
@@ -65,9 +108,8 @@ public enum BibTeX {
                     result.entriesWithoutKey += 1
                 } else {
                     let folded = key.lowercased()
-                    if !seenKeys.insert(folded).inserted, reportedKeys.insert(folded).inserted {
-                        result.duplicateKeys.append(key)
-                    }
+                    if occurrencesByKey[folded] == nil { keyOrder.append(folded) }
+                    occurrencesByKey[folded, default: []].append(KeyOccurrence(key: key, line: entryLine))
                 }
             }
 
@@ -94,6 +136,10 @@ public enum BibTeX {
                 }
             }
             if !closed { result.endsInsideEntry = true }
+        }
+        result.keyClashes = keyOrder.compactMap { folded in
+            guard let occurrences = occurrencesByKey[folded], occurrences.count > 1 else { return nil }
+            return KeyClash(occurrences: occurrences)
         }
         return result
     }

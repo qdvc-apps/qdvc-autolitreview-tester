@@ -16,7 +16,7 @@ public enum TestKind: String, CaseIterable, Sendable, Hashable {
 /// How serious a problem is. Errors make a test incomplete or wrong (a
 /// missing artifact, a reference count that doesn't match); warnings are
 /// worth a look but don't stop the test from being used (a file named the
-/// old way, a stray file, duplicate citation keys).
+/// old way, a stray file, an entry without a citation key).
 public enum Severity: Int, CaseIterable, Sendable, Hashable, Comparable {
     case warning = 1
     case error = 2
@@ -183,9 +183,13 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
     public var referencesInFileName: Int?
     /// Problems with this research question's artifacts.
     public var issues: [Issue]
+    /// Citation keys shared by separate entries in the BibTeX file. These are
+    /// for information only: they don't count as issues or affect the status.
+    public var keyClashes: [KeyClash]
 
     public init(testID: String, variant: Int?, question: String? = nil, files: [ArtifactFile] = [],
-                referencesFound: Int? = nil, referencesInFileName: Int? = nil, issues: [Issue] = []) {
+                referencesFound: Int? = nil, referencesInFileName: Int? = nil, issues: [Issue] = [],
+                keyClashes: [KeyClash] = []) {
         self.testID = testID
         self.variant = variant
         self.question = question
@@ -193,6 +197,7 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
         self.referencesFound = referencesFound
         self.referencesInFileName = referencesInFileName
         self.issues = issues
+        self.keyClashes = keyClashes
     }
 
     public var id: String { "\(testID)#\(variant ?? 0)" }

@@ -36,10 +36,11 @@ a detail pane.
   the test folder in Finder; right-click for the artifacts of each variant.
 - **Research Questions** — one row per research question (the same sheet the
   export writes): test ID, variant, question, references found, the count in
-  the file name, and whether they match. Double-click a row to open its
+  the file name, whether they match, and the number of key clashes. Double-click a row to open its
   report PDF.
 - **Detail pane** — the selected test: each research question's text, its
-  reference count, its files and its issues. Double-click a file (or select it
+  reference count, any clashing citation keys (with line numbers), its files
+  and its issues. Double-click a file (or select it
   and press ⌘↓) to open it in its default app; right-click to reveal it in
   Finder or copy its path.
 - **Search** (⌘F, in the toolbar) filters by test ID or research question.
@@ -55,7 +56,9 @@ a detail pane.
 
 Problems are **errors** (something is missing or wrong, such as a count that
 doesn't match the file name) or **warnings** (worth a look, such as a file
-named the older way, a stray file or duplicate citation keys).
+named the older way or a stray file). **Clashing citation keys** (separate
+references given the same key) are listed for information, as in
+`Smith2025 (line 94) and Smith2025 (line 255)`, without affecting the status.
 
 **View → Refresh** (⌘R) scans the workspace again; by default the app also
 does so whenever it comes to the front (Settings, ⌘,).

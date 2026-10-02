@@ -66,6 +66,9 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **Reference counting** follows FILE_FORMAT §3.2; the CSV and HTML exports and
   the app show the same numbers. Spaces inside citation keys are tolerated on
   purpose (the tool under test writes them); don't "fix" this without asking.
+- **Clashing citation keys are information, not issues** (FILE_FORMAT §3.4):
+  they never change a status. Each occurrence is shown as `Key (line N)`, the
+  line of the entry's `@`.
 - **Exports cover every test**, not just what the filters show.
 - **Artifacts open in their default apps**; there is no in-app preview.
 - Test IDs are A–Z, 0–9 and dashes only, everywhere.
@@ -77,8 +80,8 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **NamingTests** — ID validation and sanitising, canonical names, natural
   sort, list helpers.
 - **BibTeXTests** — special entry types, parenthesised entries, nested braces,
-  stray `@`s, duplicate and missing keys, keys with spaces, unbalanced files,
-  encodings.
+  stray `@`s, key clashes and their line numbers, missing keys, keys with
+  spaces, unbalanced files, encodings.
 - **ScannerTests** — complete single- and multi-RQ tests, each error and
   warning, older names, numbering problems, stray items, the workspace level,
   name parsing.

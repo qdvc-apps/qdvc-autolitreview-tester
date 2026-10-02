@@ -213,9 +213,23 @@ final class ScannerTests: XCTestCase {
         let test = try scanOne(ws, "T-8")
         XCTAssertEqual(test.questions[0].referencesFound, 3)
         XCTAssertEqual(test.status, .warnings, test.messages.joined(separator: "\n"))
-        XCTAssertTrue(test.hasIssue(.warning, containing: "duplicate citation keys: A"))
+        // The clashing keys a and A are listed, not raised as an issue.
+        XCTAssertEqual(test.questions[0].keyClashes.map(\.description), ["a (line 1) and A (line 2)"])
+        XCTAssertFalse(test.messages.contains { $0.lowercased().contains("citation keys") })
         XCTAssertTrue(test.hasIssue(.warning, containing: "1 entry without a citation key"))
         XCTAssertTrue(test.hasIssue(.warning, containing: "ends inside an entry"))
+    }
+
+    func testKeyClashesAloneLeaveATestComplete() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "KC-1", skip: ["bib"])
+        try ws.write("KC-1/KC-1_references_n3.bib",
+                     "@article{Smith2025, title={A}}\n@article{Lee2024, title={B}}\n@article{Smith2025, title={C}}\n")
+        let test = try scanOne(ws, "KC-1")
+        XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
+        XCTAssertTrue(test.allIssues.isEmpty)
+        XCTAssertEqual(test.questions[0].referencesFound, 3)
+        XCTAssertEqual(test.questions[0].keyClashes.map(\.description), ["Smith2025 (line 1) and Smith2025 (line 3)"])
     }
 
     func testKeysWithSpacesStillCountAndMatch() throws {

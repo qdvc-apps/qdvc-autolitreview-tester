@@ -51,7 +51,11 @@ final class BibTeXTests: XCTestCase {
         """
         let summary = BibTeX.summary(of: text)
         XCTAssertEqual(summary.entries, 6)
-        XCTAssertEqual(summary.duplicateKeys, ["smith2020", "Jones"])
+        XCTAssertEqual(summary.keyClashes.map(\.description), [
+            "Smith2020 (line 1), smith2020 (line 2) and SMITH2020 (line 3)",
+            "Jones (line 4) and Jones (line 5)",
+        ])
+        XCTAssertEqual(summary.keyClashes.map(\.key), ["Smith2020", "Jones"])
         XCTAssertEqual(summary.entriesWithoutKey, 1)
     }
 
@@ -68,9 +72,24 @@ final class BibTeXTests: XCTestCase {
         let summary = BibTeX.summary(of: text)
         XCTAssertEqual(summary.entries, 6)
         // Leading and trailing spaces are dropped, so the second key repeats the first.
-        XCTAssertEqual(summary.duplicateKeys, ["smith 2020"])
+        XCTAssertEqual(summary.keyClashes.map(\.description), ["Smith 2020 (line 1) and smith 2020 (line 2)"])
         XCTAssertEqual(summary.entriesWithoutKey, 1)
         XCTAssertFalse(summary.endsInsideEntry)
+    }
+
+    func testKeyClashLineNumbers() {
+        // Blank lines, a multi-line entry, CRLF endings and an @ inside a field.
+        let text = "% header\n\n@article{Smith2025,\n  title={A},\n  note={mail x@y.z}\n}\n\n"
+            + "@article{Jones, title={B}}\r\n@article{Smith2025, title={C}}\r\n"
+            + "@string{s = {x}}\n@article{Jones,\n title={D}}\n"
+        let summary = BibTeX.summary(of: text)
+        XCTAssertEqual(summary.entries, 4)
+        XCTAssertEqual(summary.keyClashes, [
+            KeyClash(occurrences: [KeyOccurrence(key: "Smith2025", line: 3), KeyOccurrence(key: "Smith2025", line: 9)]),
+            KeyClash(occurrences: [KeyOccurrence(key: "Jones", line: 8), KeyOccurrence(key: "Jones", line: 11)]),
+        ])
+        XCTAssertEqual(summary.keyClashes[0].description, "Smith2025 (line 3) and Smith2025 (line 9)")
+        XCTAssertTrue(BibTeX.summary(of: bibtex(5)).keyClashes.isEmpty)
     }
 
     func testUnbalancedEnd() {

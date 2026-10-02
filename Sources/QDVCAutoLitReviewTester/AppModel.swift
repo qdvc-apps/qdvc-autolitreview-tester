@@ -107,6 +107,8 @@ struct QuestionRow: Identifiable, Hashable {
     let namedRank: Int
     let match: Bool?
     let matchRank: Int
+    /// Citation keys shared by separate entries (for information).
+    let clashCount: Int
     let status: Status
     let statusRank: Int
 
@@ -122,6 +124,7 @@ struct QuestionRow: Identifiable, Hashable {
         namedRank = question.referencesInFileName ?? -1
         match = question.countMatches
         matchRank = question.countMatches.map { $0 ? 2 : 0 } ?? 1
+        clashCount = question.keyClashes.count
         let rowStatus = test.rowStatus(question)
         status = rowStatus
         statusRank = rowStatus.rawValue
@@ -463,6 +466,12 @@ final class AppModel {
         } else if let test = focusedTest {
             reveal(test.folder)
         }
+    }
+
+    /// Copies the clashing citation keys, one clash per line.
+    func copyKeyClashes(_ question: ResearchQuestion?) {
+        guard let clashes = question?.keyClashes, !clashes.isEmpty else { return }
+        Platform.copy(clashes.map(\.description).joined(separator: "\n"))
     }
 
     func copyQuestion(_ question: ResearchQuestion?) {

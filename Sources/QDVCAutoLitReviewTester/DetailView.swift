@@ -27,6 +27,9 @@ struct DetailView: View {
                             QuestionTextRow(question: question)
                                 .id(question.id)
                             ReferenceCountRow(question: question)
+                            if !question.keyClashes.isEmpty {
+                                KeyClashesRow(clashes: question.keyClashes)
+                            }
                             ForEach(question.files) { file in
                                 ArtifactRow(file: file)
                                     .tag(file.id)
@@ -150,6 +153,29 @@ private struct ReferenceCountRow: View {
         case let (found?, _): return "\(found) found"
         case (nil, let named?): return "file name says \(named)"
         case (nil, nil): return "\u{2013}"
+        }
+    }
+}
+
+/// Citation keys shared by separate entries, listed for information (they
+/// aren't issues and don't affect the status), e.g. "Smith2025 (line 94) and
+/// Smith2025 (line 255)".
+private struct KeyClashesRow: View {
+    let clashes: [KeyClash]
+    @State private var isExpanded = false
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            ForEach(Array(clashes.enumerated()), id: \.offset) { _, clash in
+                Text(clash.description)
+                    .font(.callout)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } label: {
+            Label(TextSupport.plural(clashes.count, "clashing citation key"), systemImage: "key")
+                .foregroundStyle(.secondary)
+                .help("Citation keys shared by separate entries in the BibTeX file, with the line each entry starts on. Listed for information; they don\u{2019}t affect the status.")
         }
     }
 }

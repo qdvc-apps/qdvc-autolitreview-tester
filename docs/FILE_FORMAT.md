@@ -105,7 +105,7 @@ Citation keys may contain spaces (`@article{Smith 2020, …}`). BibTeX itself
 doesn't allow them, but the tool under test sometimes writes them, so they are
 tolerated when verifying a file: such an entry counts like any other, and no
 warning is given. Spaces before and after a key are ignored, so `{ Smith 2020 ,`
-and `{Smith 2020,` are the same key for the duplicate check. A tab or line
+and `{Smith 2020,` are the same key when looking for clashes (§3.4). A tab or line
 break still ends a key. This applies only to checking; the app never rewrites
 a BibTeX file.
 
@@ -121,13 +121,29 @@ A warning is worth a look but doesn't make the test incomplete:
   start with `ID_`, or doesn't match any artifact), a query-folder file left at
   the top of the test folder, or a file named for another variant;
 - an empty (0-byte) screenshot, BibTeX file, PDF or HTML file;
-- in the BibTeX file: duplicate citation keys (compared without regard to
-  case, as biber does), entries without a key, or a file that ends inside an
+- in the BibTeX file: entries without a key, or a file that ends inside an
   entry (unbalanced braces).
 
 A test's **status** is Errors if it has any error, else Warnings if it has any
 warning, else Complete. A research question's row status counts its own
 issues and the test-level ones.
+
+### 3.4 Clashing citation keys (reported, not a problem)
+
+The tool under test sometimes gives separate references the same citation
+key. These **key clashes** are listed for information only: they are neither
+errors nor warnings, every clashing entry still counts as a reference, and
+they don't affect the status. Keys are compared without regard to case, as
+biber does, and each entry is identified by its key as written and the line
+its `@` is on, for example:
+
+```
+Smith2025 (line 94) and Smith2025 (line 255)
+```
+
+The app shows them in the detail pane (a "clashing citation keys" row under
+the reference count) and as a count in the Research Questions table; both
+exports list them too (§4).
 
 ## 4. Exports
 
@@ -152,6 +168,7 @@ research question:
 | Count Matches | `Yes`, `No`, or empty when either count is unknown |
 | Status | `Complete`, `Warnings` or `Errors` (the row status) |
 | Issues | `Error: …` and `Warning: …` messages, separated by `; `, test-level first |
+| Citation Key Clashes | one entry per clashing key, as in §3.4, separated by `; `; empty if none |
 
 ### 4.2 HTML
 
@@ -161,7 +178,8 @@ shows the workspace name and export time, a summary bar and sentence (tests
 complete, with warnings and with errors; research questions; references), and
 a table with one group per test: type, variant, research question, references
 found, the count in the file name (marked ≠ when it differs), status, and the
-test's issues underneath. It follows the system's light or dark appearance and
+test's issues underneath, followed by its key clashes (marked "Key clash", in
+a neutral colour). It follows the system's light or dark appearance and
 has a print layout.
 
 ## 5. New tests

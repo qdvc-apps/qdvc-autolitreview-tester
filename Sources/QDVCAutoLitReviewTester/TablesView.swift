@@ -107,6 +107,14 @@ struct QuestionsTableView: View {
                 }
             }
             .width(min: 40, ideal: 48, max: 60)
+
+            TableColumn("Key Clashes", value: \.clashCount) { row in
+                Text(row.clashCount == 0 ? "" : String(row.clashCount))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .help(row.clashCount == 0 ? "" : "Citation keys shared by separate entries; see the detail pane")
+            }
+            .width(min: 50, ideal: 70, max: 90)
         }
         .contextMenu(forSelectionType: String.self) { ids in
             if let question = model.question(id: ids.first) {
@@ -141,6 +149,8 @@ struct QuestionMenuItems: View {
         Divider()
         Button("Copy Research Question") { model.copyQuestion(question) }
             .disabled(question.question == nil)
+        Button("Copy Key Clashes") { model.copyKeyClashes(question) }
+            .disabled(question.keyClashes.isEmpty)
     }
 }
 

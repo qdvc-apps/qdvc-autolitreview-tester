@@ -7,13 +7,14 @@ public enum Exporter {
 
     public static let csvColumns = [
         "Test ID", "Type", "Variant", "Research Question", "References Found",
-        "References in File Name", "Count Matches", "Status", "Issues",
+        "References in File Name", "Count Matches", "Status", "Issues", "Citation Key Clashes",
     ]
 
     /// RFC 4180 CSV: a header row, then one row per research question, CRLF
     /// line endings, fields quoted only when they need it. Test-level issues
     /// are repeated on every row of their test, so a row read on its own
-    /// still tells the whole story.
+    /// still tells the whole story. Clashing citation keys are listed in
+    /// their own column, not as issues.
     public static func csv(_ tests: [TestRun]) -> String {
         var lines = [csvLine(csvColumns)]
         for test in tests {
@@ -31,6 +32,7 @@ public enum Exporter {
                     question.countMatches.map { $0 ? "Yes" : "No" } ?? "",
                     test.rowStatus(question).title,
                     issues.joined(separator: "; "),
+                    question.keyClashes.map(\.description).joined(separator: "; "),
                 ]))
             }
         }
@@ -110,7 +112,8 @@ public enum Exporter {
             body += "</table>\n"
         }
         body += "<footer>Exported by QDVC Auto Lit Review Tester. References are counted as BibTeX entries, "
-        body += "not counting @string, @preamble and @comment.</footer>\n"
+        body += "not counting @string, @preamble and @comment. Key clashes (citation keys shared by separate "
+        body += "entries) are listed for information and don\u{2019}t affect the status.</footer>\n"
 
         return """
         <!DOCTYPE html>
@@ -134,7 +137,9 @@ public enum Exporter {
 
     private static func testRows(_ test: TestRun) -> String {
         let allIssues = test.issues + test.questions.flatMap(\.issues)
-        let span = test.questions.count + (allIssues.isEmpty ? 0 : 1)
+        let hasClashes = test.questions.contains { !$0.keyClashes.isEmpty }
+        let hasNotes = !allIssues.isEmpty || hasClashes
+        let span = test.questions.count + (hasNotes ? 1 : 0)
         var html = "<tbody class=\"test\">\n"
         if test.questions.isEmpty {
             html += "<tr><th scope=\"rowgroup\" class=\"id\"\(span > 1 ? " rowspan=\"2\"" : "")>\(escape(test.id))</th>"
@@ -162,7 +167,7 @@ public enum Exporter {
             html += "<td>\(statusCell(test.rowStatus(question)))</td>"
             html += "</tr>\n"
         }
-        if !allIssues.isEmpty {
+        if hasNotes {
             html += "<tr class=\"issues\"><td colspan=\"6\"><ul>"
             for issue in test.issues {
                 html += issueItem(issue, scope: nil)
@@ -170,6 +175,13 @@ public enum Exporter {
             for question in test.questions {
                 for issue in question.issues {
                     html += issueItem(issue, scope: question.variant.map { "Variant \($0)" })
+                }
+            }
+            for question in test.questions {
+                for clash in question.keyClashes {
+                    let scope = question.variant.map { "Variant \($0): " } ?? ""
+                    html += "<li class=\"info\"><span class=\"sev\">Key clash</span> "
+                        + escape(scope + clash.description) + "</li>"
                 }
             }
             html += "</ul></td></tr>\n"
@@ -279,6 +291,7 @@ public enum Exporter {
     tr.issues .sev { font-weight: 650; }
     tr.issues li.errors .sev { color: var(--errors); }
     tr.issues li.warnings .sev { color: var(--warnings); }
+    tr.issues li.info .sev { color: var(--muted); }
     .empty { color: var(--muted); }
     footer { margin-top: 24px; color: var(--muted); font-size: 12px; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
