@@ -77,6 +77,22 @@ duplicate is reported. New tests are always written with the standard names.
 - **The screenshots, PDF and HTML** are not opened; only their presence and
   size are checked.
 
+### 2.5 Ground truth and annotations (optional)
+
+Two kinds of file hold what the tester enters in the app. Both are optional:
+a test is complete without them, and they never add an error.
+
+- **Ground truth** — `ID/ID_ground_truth.bib`, one per test (also for a
+  multi-RQ test): the BibTeX entry of a published paper that asks the same
+  research questions. It should hold exactly one entry; with none or several,
+  the test gets a warning and the first entry is used. The app shows it as an
+  APA 7 reference (§5) and copies it, or just its DOI.
+- **Annotation** — the tester's brief note on a research question:
+  `ID_annotation.md` in `ID_query/`, or `ID_variantN_annotation.md` in
+  `ID_query_variantN/` (or in whichever folder holds that variant's query
+  files, if it has an older name). Plain text, saved trimmed with one trailing
+  newline; clearing the note deletes the file.
+
 ## 3. Checks
 
 ### 3.1 Errors
@@ -169,6 +185,9 @@ research question:
 | Status | `Complete`, `Warnings` or `Errors` (the row status) |
 | Issues | `Error: …` and `Warning: …` messages, separated by `; `, test-level first |
 | Citation Key Clashes | one entry per clashing key, as in §3.4, separated by `; `; empty if none |
+| Annotation | the research question's annotation (§2.5); empty if none |
+| Ground Truth (APA 7) | the test's ground truth as a plain-text APA 7 reference, repeated on each of its rows |
+| Ground Truth DOI | its DOI as `doi:10.1234/abcd9999`; empty if none |
 
 ### 4.2 HTML
 
@@ -179,10 +198,45 @@ complete, with warnings and with errors; research questions; references), and
 a table with one group per test: type, variant, research question, references
 found, the count in the file name (marked ≠ when it differs), status, and the
 test's issues underneath, followed by its key clashes (marked "Key clash", in
-a neutral colour). It follows the system's light or dark appearance and
+a neutral colour). Annotations appear under their research questions, and the
+ground truth (with its italics) above the test's issues. It follows the system's light or dark appearance and
 has a print layout.
 
-## 5. New tests
+## 5. APA 7 references
+
+The ground truth is formatted in APA 7th edition style, as in QDVC Bibliotheca:
+a pragmatic formatter for the common entry types, not a full CSL engine.
+
+| Entry type | Layout |
+| --- | --- |
+| `article` | Authors (Year). Title. *Journal*, *Volume*(Issue), pages. DOI |
+| `inproceedings`, `incollection`, `inbook` | Authors (Year). Title. In E. Editor (Ed.), *Book title* (pp. pages). Publisher. DOI |
+| `book`, `proceedings` | Authors (Year). *Title* (edition ed.). Publisher. DOI |
+| `phdthesis`, `mastersthesis` | Author (Year). *Title* [Doctoral dissertation, School]. DOI |
+| `techreport` | Authors (Year). *Title* (Report No. N). Institution. DOI |
+| anything else | Authors (Year). *Title*. Publisher or howpublished. DOI |
+
+- **The DOI is written `doi:10.1234/abcd9999`**, not as a URL; `https://doi.org/`,
+  `http://dx.doi.org/` and `doi:` prefixes in the `doi` field are removed
+  first. With no DOI, the `url` field (or a URL in `howpublished`) is used.
+- **Authors**: "Surname, F. M." with initials for every given name
+  (hyphenated names keep the hyphen, "J.-P."), particles kept with the surname
+  ("van der Berg, J."), a name wholly in braces kept as an organisation, up to
+  20 authors joined with ", &"; with 21 or more, the first 19, ". . ." and the
+  last. A book with only editors lists them with "(Ed.)" or "(Eds.)"; with no
+  author at all, the title moves to the front.
+- **Year**: `year`, or the first four digits of `date`, or "n.d.".
+- **Text**: LaTeX accents and escapes become characters (`{\"u}` → ü, `\&` → &),
+  braces are removed, `--` becomes an en dash. Titles are used as written (no
+  automatic sentence case, which would lower-case proper nouns).
+- Parsing understands brace- and quote-delimited values, `#` concatenation,
+  `@string` macros and the month macros.
+
+Copying the reference puts rich text (RTF and HTML, so italics survive a paste
+into Word, Pages or Mail) and plain text on the pasteboard; copying the DOI
+puts just `doi:…`.
+
+## 6. New tests
 
 New Test creates `ID/` with the standard names of §2.1 or §2.2. The dropped
 files are **copied**, never moved or changed; the research question files are

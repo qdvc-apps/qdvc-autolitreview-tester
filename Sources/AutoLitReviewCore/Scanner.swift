@@ -137,6 +137,9 @@ private struct TestScanner {
     /// Names of the single-RQ items (for the "mixed" warning).
     var singleItems: [String] = []
     var testIssues: [Issue] = []
+    /// The optional ground truth and annotations (docs/FILE_FORMAT.md §2.5).
+    var groundTruth: GroundTruth?
+    var annotations: [Int?: (url: URL, text: String)] = [:]
 
     init(id: String, folder: URL, fileManager: FileManager) {
         self.id = id
@@ -176,7 +179,8 @@ private struct TestScanner {
         }
         let questionSlots: [Int?] = kind == .single ? [nil] : variants.map { Optional($0) }
         let questions = questionSlots.map { buildQuestion($0) }
-        return TestRun(id: id, folder: folder, kind: kind, questions: questions, issues: testIssues)
+        return TestRun(id: id, folder: folder, kind: kind, questions: questions, issues: testIssues,
+                       groundTruth: groundTruth)
     }
 
     // MARK: Entries
@@ -197,6 +201,10 @@ private struct TestScanner {
     }
 
     private mutating func scanFileEntry(_ entry: WorkspaceScanner.Entry, _ parsed: WorkspaceScanner.ParsedName) {
+        if parsed.variant == nil, parsed.rest == "ground_truth.bib" {
+            readGroundTruth(entry)
+            return
+        }
         if let top = WorkspaceScanner.parseTopLevel(parsed.rest) {
             let canonical = parsed.variant == nil || (!parsed.queryPrefix && parsed.plainDigits)
             if parsed.variant == nil { singleItems.append(entry.name) }
@@ -220,6 +228,11 @@ private struct TestScanner {
         }
         for entry in entries {
             let relative = folderEntry.name + "/" + entry.name
+            if !entry.isDirectory, let parsed = WorkspaceScanner.parse(entry.name, testID: id),
+               parsed.rest == "annotation.md", parsed.variant == variant {
+                readAnnotation(entry, relativePath: relative, variant: variant)
+                continue
+            }
             guard !entry.isDirectory, let parsed = WorkspaceScanner.parse(entry.name, testID: id),
                   let kind = WorkspaceScanner.queryFolderKinds[parsed.rest] else {
                 testIssues.append(.warning("Unrecognised item: \(relative)"))
@@ -232,6 +245,28 @@ private struct TestScanner {
             }
             let canonical = variant == nil || (!parsed.queryPrefix && parsed.plainDigits)
             add(variant, kind, entry, relativePath: relative, canonical: canonical, countInName: nil)
+        }
+    }
+
+    private mutating func readGroundTruth(_ entry: WorkspaceScanner.Entry) {
+        do {
+            let text = try TextSupport.readText(entry.url)
+            let truth = GroundTruth(source: text, url: entry.url)
+            groundTruth = truth
+            if let problem = truth.problem {
+                testIssues.append(.warning("\(entry.name): \(problem)"))
+            }
+        } catch {
+            testIssues.append(.warning("Couldn\u{2019}t read \(entry.name): \(error.localizedDescription)"))
+        }
+    }
+
+    private mutating func readAnnotation(_ entry: WorkspaceScanner.Entry, relativePath: String, variant: Int?) {
+        do {
+            let text = try TextSupport.readText(entry.url).trimmed
+            annotations[variant] = (url: entry.url, text: text)
+        } catch {
+            testIssues.append(.warning("Couldn\u{2019}t read \(relativePath): \(error.localizedDescription)"))
         }
     }
 
@@ -265,6 +300,10 @@ private struct TestScanner {
 
     private func buildQuestion(_ variant: Int?) -> ResearchQuestion {
         var question = ResearchQuestion(testID: id, variant: variant)
+        if let annotation = annotations[variant] {
+            question.annotationFile = annotation.url
+            question.annotation = annotation.text.isEmpty ? nil : annotation.text
+        }
         let candidates = found[variant] ?? [:]
         for kind in ArtifactKind.allCases {
             let list = (candidates[kind] ?? []).sorted {

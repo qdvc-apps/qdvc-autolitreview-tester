@@ -79,6 +79,8 @@ struct TestRow: Identifiable, Hashable {
     let status: Status
     let statusRank: Int
     let issueCount: Int
+    /// "Smith et al. (2024)", or "" when there is no ground truth.
+    let groundTruth: String
 
     init(_ test: TestRun) {
         id = test.id
@@ -91,6 +93,7 @@ struct TestRow: Identifiable, Hashable {
         status = test.status
         statusRank = test.status.rawValue
         issueCount = test.allIssues.count
+        groundTruth = test.groundTruth?.shortCitation ?? (test.groundTruth == nil ? "" : "\u{2013}")
     }
 }
 
@@ -109,6 +112,8 @@ struct QuestionRow: Identifiable, Hashable {
     let matchRank: Int
     /// Citation keys shared by separate entries (for information).
     let clashCount: Int
+    /// The annotation on one line ("" when there is none).
+    let annotation: String
     let status: Status
     let statusRank: Int
 
@@ -125,6 +130,7 @@ struct QuestionRow: Identifiable, Hashable {
         match = question.countMatches
         matchRank = question.countMatches.map { $0 ? 2 : 0 } ?? 1
         clashCount = question.keyClashes.count
+        annotation = (question.annotation ?? "").split(whereSeparator: \.isNewline).joined(separator: " ")
         let rowStatus = test.rowStatus(question)
         status = rowStatus
         statusRank = rowStatus.rawValue
@@ -138,9 +144,17 @@ struct AlertInfo: Identifiable {
 }
 
 /// The one sheet that can be open over the main window.
-enum ActiveSheet: String, Identifiable {
+enum ActiveSheet: Identifiable, Equatable {
     case newTest
-    var id: String { rawValue }
+    /// Editing the ground truth of the test with this ID.
+    case groundTruth(String)
+
+    var id: String {
+        switch self {
+        case .newTest: return "new-test"
+        case .groundTruth(let testID): return "ground-truth-\(testID)"
+        }
+    }
 }
 
 /// All state for the single main window. Every change goes through here,
@@ -170,6 +184,11 @@ final class AppModel {
 
     private(set) var testRows: [TestRow] = []
     private(set) var questionRows: [QuestionRow] = []
+
+    /// Annotations as typed, by research-question ID, until the scan shows
+    /// the same text on disk. Saving happens a moment after typing stops.
+    private(set) var annotationDrafts: [String: String] = [:]
+    @ObservationIgnored private var annotationSaveTasks: [String: Task<Void, Never>] = [:]
 
     /// Bumped by every scan, so only the latest one's result is applied.
     @ObservationIgnored private var scanGeneration = 0
@@ -271,6 +290,8 @@ final class AppModel {
     }
 
     func openWorkspace(_ url: URL) {
+        flushAnnotations()
+        annotationDrafts = [:]
         guard Platform.isDirectory(url) else {
             alert = AlertInfo(title: "Workspace folder not found",
                               message: (url.path as NSString).abbreviatingWithTildeInPath)
@@ -294,6 +315,8 @@ final class AppModel {
     }
 
     func closeWorkspace() {
+        flushAnnotations()
+        annotationDrafts = [:]
         scanGeneration += 1
         workspaceURL = nil
         scan = nil
@@ -365,6 +388,7 @@ final class AppModel {
            !newScan.tests.contains(where: { test in test.questions.contains { $0.id == selected } }) {
             selectedQuestionID = nil
         }
+        reconcileAnnotationDrafts()
         if let file = selectedFileID {
             let stillThere = focusedTest?.questions.contains(where: { question in
                 question.files.contains(where: { $0.id == file })
@@ -388,12 +412,14 @@ final class AppModel {
         var questions: [QuestionRow] = []
         for test in scan.tests {
             let idMatches = query.isEmpty || test.id.localizedCaseInsensitiveContains(query)
-            let anyQuestionMatches = test.questions.contains { ($0.question ?? "").localizedCaseInsensitiveContains(query) }
-            if filter.matches(status: test.status, kind: test.kind), idMatches || anyQuestionMatches {
+            let truthMatches = !query.isEmpty
+                && (test.groundTruth?.reference?.plain ?? "").localizedCaseInsensitiveContains(query)
+            let anyQuestionMatches = test.questions.contains { questionMatches($0, query) }
+            if filter.matches(status: test.status, kind: test.kind), idMatches || truthMatches || anyQuestionMatches {
                 tests.append(TestRow(test))
             }
             for question in test.questions where filter.matches(status: test.rowStatus(question), kind: test.kind) {
-                if idMatches || (question.question ?? "").localizedCaseInsensitiveContains(query) {
+                if idMatches || questionMatches(question, query) {
                     questions.append(QuestionRow(test, question))
                 }
             }
@@ -402,6 +428,12 @@ final class AppModel {
         questions.sort(using: questionSortOrder)
         testRows = tests
         questionRows = questions
+    }
+
+    /// A research question matches a search by its text or its annotation.
+    private func questionMatches(_ question: ResearchQuestion, _ query: String) -> Bool {
+        (question.question ?? "").localizedCaseInsensitiveContains(query)
+            || annotationText(for: question).localizedCaseInsensitiveContains(query)
     }
 
     /// Keeps the detail pane on the same test when switching tabs.
@@ -477,6 +509,109 @@ final class AppModel {
     func copyQuestion(_ question: ResearchQuestion?) {
         guard let text = question?.question else { return }
         Platform.copy(text)
+    }
+
+    /// Every research question of a test, one per line ("Variant 1: …").
+    func copyAllQuestions(_ test: TestRun?) {
+        guard let test else { return }
+        let lines = test.questions.compactMap { question -> String? in
+            guard let text = question.question else { return nil }
+            return question.variant.map { "Variant \($0): \(text)" } ?? text
+        }
+        guard !lines.isEmpty else { return }
+        Platform.copy(lines.joined(separator: "\n"))
+    }
+
+    /// The ground truth's APA 7 reference, as rich text (italics kept when
+    /// pasted into Word, Pages or Mail) and plain text.
+    func copyGroundTruthReference(_ test: TestRun?) {
+        guard let reference = test?.groundTruth?.reference else { return }
+        Platform.copy(reference)
+    }
+
+    /// The ground truth's DOI as `doi:10.1234/abcd`.
+    func copyGroundTruthDOI(_ test: TestRun?) {
+        guard let doi = test?.groundTruth?.doi else { return }
+        Platform.copy(doi)
+    }
+
+    // MARK: - Ground truth
+
+    func beginEditGroundTruth(_ test: TestRun?) {
+        guard let test else { return }
+        activeSheet = .groundTruth(test.id)
+    }
+
+    /// Saves (or, with empty text, removes) a test's ground truth; returns a
+    /// problem to show, or nil when done (the sheet closes).
+    func saveGroundTruth(_ text: String, for testID: String) -> String? {
+        guard let test = scan?.test(testID) else { return "The test \(testID) is no longer in the workspace." }
+        do {
+            try WorkspaceWriter.saveGroundTruth(text, for: test)
+        } catch {
+            return error.localizedDescription
+        }
+        activeSheet = nil
+        rescan()
+        return nil
+    }
+
+    // MARK: - Annotations
+
+    /// What the annotation field shows: the text being typed, else what is on disk.
+    func annotationText(for question: ResearchQuestion) -> String {
+        annotationDrafts[question.id] ?? question.annotation ?? ""
+    }
+
+    /// Called as the tester types; saves a moment after typing stops.
+    func setAnnotation(_ text: String, for questionID: String) {
+        annotationDrafts[questionID] = text
+        annotationSaveTasks[questionID]?.cancel()
+        annotationSaveTasks[questionID] = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard !Task.isCancelled else { return }
+            self?.saveAnnotation(questionID)
+        }
+    }
+
+    /// Saves every annotation still waiting (when the app goes to the
+    /// background or quits, or the workspace closes).
+    func flushAnnotations() {
+        for (id, task) in annotationSaveTasks {
+            task.cancel()
+            saveAnnotation(id)
+        }
+        annotationSaveTasks = [:]
+    }
+
+    private func saveAnnotation(_ questionID: String) {
+        annotationSaveTasks[questionID] = nil
+        guard let text = annotationDrafts[questionID], let scan,
+              let t = scan.tests.firstIndex(where: { test in test.questions.contains { $0.id == questionID } }),
+              let q = scan.tests[t].questions.firstIndex(where: { $0.id == questionID }) else { return }
+        let test = scan.tests[t]
+        let question = test.questions[q]
+        let trimmed = text.trimmed
+        guard trimmed != (question.annotation ?? "") || (trimmed.isEmpty && question.annotationFile != nil) else { return }
+        do {
+            let url = try WorkspaceWriter.saveAnnotation(text, for: question, in: test)
+            self.scan?.tests[t].questions[q].annotation = trimmed.isEmpty ? nil : trimmed
+            self.scan?.tests[t].questions[q].annotationFile = url
+            refreshRows()
+        } catch {
+            alert = AlertInfo(title: "Couldn\u{2019}t save the annotation", message: error.localizedDescription)
+        }
+    }
+
+    /// After a scan: a draft that matches the file is kept (it may have
+    /// trailing spaces still being typed); one that doesn't, with no save
+    /// pending, means the file was changed elsewhere, so the file wins.
+    private func reconcileAnnotationDrafts() {
+        guard let scan else { return }
+        for (id, draft) in annotationDrafts where annotationSaveTasks[id] == nil {
+            let onDisk = scan.tests.lazy.flatMap(\.questions).first { $0.id == id }?.annotation ?? ""
+            if draft.trimmed != onDisk { annotationDrafts[id] = nil }
+        }
     }
 
     func question(id: String?) -> ResearchQuestion? {

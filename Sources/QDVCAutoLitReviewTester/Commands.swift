@@ -80,6 +80,21 @@ struct TesterCommands: Commands {
             Button("Copy Research Question") { model.copyQuestion(question) }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(question?.question == nil)
+            Button("Copy All Research Questions") { model.copyAllQuestions(model.focusedTest) }
+                .keyboardShortcut("c", modifiers: [.command, .option, .shift])
+                .disabled(model.focusedTest?.questions.contains { $0.question != nil } != true)
+            Divider()
+            Button(model.focusedTest?.groundTruth == nil ? "Add Ground Truth\u{2026}" : "Edit Ground Truth\u{2026}") {
+                model.beginEditGroundTruth(model.focusedTest)
+            }
+            .keyboardShortcut("g", modifiers: [.command, .shift])
+            .disabled(model.focusedTest == nil)
+            Button("Copy Ground Truth Reference") { model.copyGroundTruthReference(model.focusedTest) }
+                .keyboardShortcut("c", modifiers: [.command, .control])
+                .disabled(model.focusedTest?.groundTruth?.reference == nil)
+            Button("Copy Ground Truth DOI") { model.copyGroundTruthDOI(model.focusedTest) }
+                .keyboardShortcut("c", modifiers: [.command, .control, .option])
+                .disabled(model.focusedTest?.groundTruth?.doi == nil)
             Button("Reveal in Finder") { model.revealFocused() }
                 .keyboardShortcut("r", modifiers: [.command, .option])
                 .disabled(model.focusedTest == nil)

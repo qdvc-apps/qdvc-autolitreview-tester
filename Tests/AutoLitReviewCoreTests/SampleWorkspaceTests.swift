@@ -29,6 +29,11 @@ final class SampleWorkspaceTests: XCTestCase {
         XCTAssertEqual(scan.test("DEMO-103")?.questions.first?.referencesInFileName, 20)
         XCTAssertEqual(scan.questionCount, 11)
 
+        XCTAssertEqual(scan.test("DEMO-101")?.groundTruth?.doi, "doi:10.1016/j.jss.2023.111602")
+        XCTAssertEqual(scan.test("DEMO-102")?.groundTruth?.shortCitation, "Haddad & Silva (2024)")
+        XCTAssertEqual(scan.test("DEMO-102")?.questions.map { $0.annotation != nil }, [true, true, false])
+        XCTAssertNil(scan.test("DEMO-103")?.groundTruth)
+
         for test in scan.tests where test.status == .complete {
             XCTAssertTrue(test.allIssues.isEmpty, "\(test.id): \(test.allIssues)")
         }

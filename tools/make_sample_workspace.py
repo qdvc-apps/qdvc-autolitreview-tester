@@ -12,6 +12,10 @@ every kind of result the app reports.
               and variant 4 has no response screenshot (error)
     DEMO-110  single RQ, complete, with no references found (n0)
 
+DEMO-101 and DEMO-102 also have a ground truth (DEMO-1xx_ground_truth.bib),
+and two of DEMO-102's research questions have annotations; both are
+optional and don't change a test's status.
+
 plus README.txt, which is not a test and is listed as another item.
 
 The screenshots are small solid-colour PNGs and the reports are one-page PDFs
@@ -164,6 +168,31 @@ def main():
     variant("DEMO-102", 1, "How do organisations govern the use of generative AI in knowledge work?", 8)
     variant("DEMO-102", 2, "What governance mechanisms do organisations use for generative AI tools?", 5)
     variant("DEMO-102", 3, "Which policies, roles and controls guide employee use of generative AI?", 11)
+
+    write(WORKSPACE / "DEMO-101" / "DEMO-101_ground_truth.bib", """@article{okafor2023remote,
+  author = {Okafor, Chidi and Lindqvist, Anna-Karin and Moreau, Lu{\\'c}},
+  title = {Remote work and developer productivity: {A} systematic literature review},
+  journal = {Journal of Systems and Software},
+  volume = {198},
+  pages = {111602},
+  year = {2023},
+  doi = {https://doi.org/10.1016/j.jss.2023.111602}
+}
+""")
+    write(WORKSPACE / "DEMO-102" / "DEMO-102_ground_truth.bib", """@inproceedings{haddad2024genai,
+  author = {Haddad, Rania and Silva, Pedro},
+  title = {Governing generative {AI} at work: {A} review of organisational policies},
+  booktitle = {Proceedings of the 45th International Conference on Information Systems},
+  pages = {1--17},
+  year = {2024},
+  publisher = {Association for Information Systems},
+  doi = {10.5555/icis2024.1234}
+}
+""")
+    write(WORKSPACE / "DEMO-102" / "DEMO-102_query_variant1" / "DEMO-102_variant1_annotation.md",
+          "Broadest wording. Found the ground truth paper.\n")
+    write(WORKSPACE / "DEMO-102" / "DEMO-102_query_variant2" / "DEMO-102_variant2_annotation.md",
+          "Narrower; missed two policy studies the ground truth cites.\n")
 
     single("DEMO-103", "What barriers do small businesses face when adopting cloud accounting software?",
            18, named=20, skip=("dom",))

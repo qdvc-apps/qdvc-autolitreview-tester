@@ -25,10 +25,10 @@ final class ExportTests: XCTestCase {
         _ = ws
         let csv = Exporter.csv(tests)
         XCTAssertTrue(csv.hasSuffix("\r\n"))
-        let header = "Test ID,Type,Variant,Research Question,References Found,References in File Name,Count Matches,Status,Issues,Citation Key Clashes\r\n"
+        let header = "Test ID,Type,Variant,Research Question,References Found,References in File Name,Count Matches,Status,Issues,Citation Key Clashes,Annotation,Ground Truth (APA 7),Ground Truth DOI\r\n"
         XCTAssertTrue(csv.hasPrefix(header))
-        XCTAssertTrue(csv.contains("A-1,Single RQ,,\"What is \"\"good\"\", really?\nSecond line.\",2,2,Yes,Complete,,\r\n"))
-        XCTAssertTrue(csv.contains("A-2,Multiple RQs,1,First <variant> & co,3,3,Yes,Warnings,Warning: Unrecognised item: notes.txt,\r\n"))
+        XCTAssertTrue(csv.contains("A-1,Single RQ,,\"What is \"\"good\"\", really?\nSecond line.\",2,2,Yes,Complete,,,,,\r\n"))
+        XCTAssertTrue(csv.contains("A-2,Multiple RQs,1,First <variant> & co,3,3,Yes,Warnings,Warning: Unrecognised item: notes.txt,,,,\r\n"))
         XCTAssertTrue(csv.contains("A-2,Multiple RQs,2,Question 2?,1,1,Yes,Errors,Warning: Unrecognised item: notes.txt; Error: Report (HTML DOM) is missing"))
 
         let data = Exporter.csvData(tests)
@@ -70,12 +70,30 @@ final class ExportTests: XCTestCase {
         XCTAssertEqual(tests[0].status, .complete)
 
         let csv = Exporter.csv(tests)
-        XCTAssertTrue(csv.contains(",Complete,,Smith2025 (line 1) and Smith2025 (line 3); Lee (line 2) and lee (line 4)\r\n"))
+        XCTAssertTrue(csv.contains(",Complete,,Smith2025 (line 1) and Smith2025 (line 3); Lee (line 2) and lee (line 4),,,\r\n"))
 
         let html = Exporter.html(tests, workspaceName: "w", generated: Date())
         XCTAssertTrue(html.contains("<li class=\"info\"><span class=\"sev\">Key clash</span> Variant 2: Smith2025 (line 1) and Smith2025 (line 3)</li>"))
         XCTAssertTrue(html.contains("rowspan=\"3\">KC-2</th>"))
         XCTAssertFalse(html.contains("<span class=\"sev\">Warning</span>"))
+    }
+
+    func testGroundTruthAndAnnotationsInBothExports() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "GT-1")
+        try ws.write("GT-1/GT-1_query/GT-1_annotation.md", "Tool missed <two> key papers.\n")
+        try ws.write("GT-1/GT-1_ground_truth.bib",
+                     "@article{t, author={Smith, John}, title={Truth}, journal={J}, year={2024}, doi={10.1234/abcd9999}}")
+        let tests = try WorkspaceScanner.scan(ws.url).tests
+        XCTAssertEqual(tests[0].status, .complete, tests[0].messages.joined(separator: "\n"))
+
+        let csv = Exporter.csv(tests)
+        XCTAssertTrue(csv.contains(",Complete,,,Tool missed <two> key papers.,\"Smith, J. (2024). Truth. J. doi:10.1234/abcd9999\",doi:10.1234/abcd9999\r\n"))
+
+        let html = Exporter.html(tests, workspaceName: "w", generated: Date())
+        XCTAssertTrue(html.contains("<p class=\"note\">Tool missed &lt;two&gt; key papers.</p>"))
+        XCTAssertTrue(html.contains("<span class=\"sev\">Ground truth</span> Smith, J. (2024). Truth. <i>J</i>. doi:10.1234/abcd9999</li>"))
+        XCTAssertTrue(html.contains("rowspan=\"2\">GT-1</th>"))
     }
 
     func testHTMLMarksMismatchedCounts() throws {

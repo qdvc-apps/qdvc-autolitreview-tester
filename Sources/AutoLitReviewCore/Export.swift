@@ -8,13 +8,15 @@ public enum Exporter {
     public static let csvColumns = [
         "Test ID", "Type", "Variant", "Research Question", "References Found",
         "References in File Name", "Count Matches", "Status", "Issues", "Citation Key Clashes",
+        "Annotation", "Ground Truth (APA 7)", "Ground Truth DOI",
     ]
 
     /// RFC 4180 CSV: a header row, then one row per research question, CRLF
     /// line endings, fields quoted only when they need it. Test-level issues
     /// are repeated on every row of their test, so a row read on its own
     /// still tells the whole story. Clashing citation keys are listed in
-    /// their own column, not as issues.
+    /// their own column, not as issues; the ground truth (a test-level
+    /// item) is repeated on every row of its test, like test-level issues.
     public static func csv(_ tests: [TestRun]) -> String {
         var lines = [csvLine(csvColumns)]
         for test in tests {
@@ -33,6 +35,9 @@ public enum Exporter {
                     test.rowStatus(question).title,
                     issues.joined(separator: "; "),
                     question.keyClashes.map(\.description).joined(separator: "; "),
+                    question.annotation ?? "",
+                    test.groundTruth?.reference?.plain ?? "",
+                    test.groundTruth?.doi ?? "",
                 ]))
             }
         }
@@ -138,7 +143,7 @@ public enum Exporter {
     private static func testRows(_ test: TestRun) -> String {
         let allIssues = test.issues + test.questions.flatMap(\.issues)
         let hasClashes = test.questions.contains { !$0.keyClashes.isEmpty }
-        let hasNotes = !allIssues.isEmpty || hasClashes
+        let hasNotes = !allIssues.isEmpty || hasClashes || test.groundTruth?.reference != nil
         let span = test.questions.count + (hasNotes ? 1 : 0)
         var html = "<tbody class=\"test\">\n"
         if test.questions.isEmpty {
@@ -153,10 +158,11 @@ public enum Exporter {
             }
             html += "<td class=\"type\">\(index == 0 ? escape(test.kind.title) : "")</td>"
             html += "<td class=\"variant\">\(question.variant.map(String.init) ?? "\u{2013}")</td>"
+            let note = question.annotation.map { "<p class=\"note\">\(escape($0))</p>" } ?? ""
             if let text = question.question {
-                html += "<td class=\"rq\">\(escape(text))</td>"
+                html += "<td class=\"rq\">\(escape(text))\(note)</td>"
             } else {
-                html += "<td class=\"rq none\">Research question not available</td>"
+                html += "<td class=\"rq\"><span class=\"none\">Research question not available</span>\(note)</td>"
             }
             html += "<td class=\"num\">\(question.referencesFound.map(grouped) ?? "\u{2013}")</td>"
             let mismatch = question.countMatches == false
@@ -169,6 +175,9 @@ public enum Exporter {
         }
         if hasNotes {
             html += "<tr class=\"issues\"><td colspan=\"6\"><ul>"
+            if let reference = test.groundTruth?.reference {
+                html += "<li class=\"truth\"><span class=\"sev\">Ground truth</span> \(reference.html)</li>"
+            }
             for issue in test.issues {
                 html += issueItem(issue, scope: nil)
             }
@@ -292,6 +301,11 @@ public enum Exporter {
     tr.issues li.errors .sev { color: var(--errors); }
     tr.issues li.warnings .sev { color: var(--warnings); }
     tr.issues li.info .sev { color: var(--muted); }
+    tr.issues li.truth { font-family: var(--serif); font-size: 14px; padding-bottom: 4px; }
+    tr.issues li.truth .sev { font-family: var(--sans); font-size: 13px; color: var(--ink); }
+    td.rq .note { margin: 6px 0 0; padding-left: 10px; border-left: 3px solid var(--rule); font-family: var(--sans);
+                  font-size: 13px; line-height: 1.45; color: var(--muted); white-space: pre-line; }
+    td.rq .none { color: var(--muted); font-style: italic; font-family: var(--sans); font-size: 14px; }
     .empty { color: var(--muted); }
     footer { margin-top: 24px; color: var(--muted); font-size: 12px; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

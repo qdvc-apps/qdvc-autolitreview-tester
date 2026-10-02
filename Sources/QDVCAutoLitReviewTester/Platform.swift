@@ -1,5 +1,7 @@
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
+import AutoLitReviewCore
 
 /// Thin wrappers over AppKit services.
 enum Platform {
@@ -7,6 +9,20 @@ enum Platform {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+    }
+
+    /// A formatted reference as HTML, RTF and plain text, so italics survive
+    /// a paste into Word, Pages, Mail or Google Docs.
+    static func copy(_ reference: FormattedReference) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        let attributed = reference.attributedString
+        if let rtf = attributed.rtf(from: NSRange(location: 0, length: attributed.length),
+                                    documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) {
+            pasteboard.setData(rtf, forType: .rtf)
+        }
+        pasteboard.setString(reference.html, forType: .html)
+        pasteboard.setString(reference.plain, forType: .string)
     }
 
     static func revealInFinder(_ urls: [URL]) {

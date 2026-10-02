@@ -242,6 +242,84 @@ final class ScannerTests: XCTestCase {
         XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
     }
 
+    // MARK: Ground truth and annotations
+
+    func testGroundTruthAndAnnotationsAreOptionalAndRecognised() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "GT-2")
+        try ws.write("GT-2/GT-2_ground_truth.bib", "@article{t, author={Lee, Kim}, title={T}, year={2020}, doi={https://doi.org/10.1/x}}")
+        try ws.write("GT-2/GT-2_query/GT-2_annotation.md", "\n  Looks good.  \n")
+        try writeVariant(ws, "GT-3", 1)
+        try writeVariant(ws, "GT-3", 2)
+        try ws.write("GT-3/GT-3_ground_truth.bib", "@book{b, title={B}}")
+        try ws.write("GT-3/GT-3_query_variant2/GT-3_variant2_annotation.md", "Second variant note")
+        try writeSingleTest(ws, "GT-4")
+
+        let scan = try WorkspaceScanner.scan(ws.url)
+        let single = try XCTUnwrap(scan.test("GT-2"))
+        XCTAssertEqual(single.status, .complete, single.messages.joined(separator: "\n"))
+        XCTAssertEqual(single.groundTruth?.doi, "doi:10.1/x")
+        XCTAssertEqual(single.groundTruth?.shortCitation, "Lee (2020)")
+        XCTAssertEqual(single.questions[0].annotation, "Looks good.")
+        XCTAssertEqual(single.questions[0].annotationFile?.lastPathComponent, "GT-2_annotation.md")
+
+        let multi = try XCTUnwrap(scan.test("GT-3"))
+        XCTAssertEqual(multi.status, .complete, multi.messages.joined(separator: "\n"))
+        XCTAssertNotNil(multi.groundTruth)
+        XCTAssertNil(multi.questions[0].annotation)
+        XCTAssertEqual(multi.questions[1].annotation, "Second variant note")
+
+        let none = try XCTUnwrap(scan.test("GT-4"))
+        XCTAssertNil(none.groundTruth)
+        XCTAssertEqual(none.status, .complete)
+    }
+
+    func testGroundTruthWithSeveralEntriesIsAWarning() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "GT-5")
+        try ws.write("GT-5/GT-5_ground_truth.bib", "@article{a, title={A}}\n@article{b, title={B}}\n")
+        let test = try scanOne(ws, "GT-5")
+        XCTAssertEqual(test.status, .warnings)
+        XCTAssertTrue(test.hasIssue(.warning, containing: "GT-5_ground_truth.bib: It holds 2 entries"))
+        XCTAssertEqual(test.groundTruth?.entry?.key, "a")
+    }
+
+    func testWritingAnnotationsAndGroundTruth() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "W-1")
+        // Variant 2 in the older-named folder: its annotation goes beside its files.
+        try writeVariant(ws, "W-2", 1)
+        try ws.write("W-2/W-2_variant2/W-2_variant2_RQ_asked.md", "Q2?")
+        var test = try scanOne(ws, "W-1")
+
+        try WorkspaceWriter.saveAnnotation("  First note \n", for: test.questions[0], in: test)
+        XCTAssertEqual(try String(contentsOf: ws.url.appendingPathComponent("W-1/W-1_query/W-1_annotation.md"), encoding: .utf8),
+                       "First note\n")
+        try WorkspaceWriter.saveGroundTruth("@article{x, title={X}}", for: test)
+        XCTAssertTrue(ws.exists("W-1/W-1_ground_truth.bib"))
+
+        test = try scanOne(ws, "W-1")
+        XCTAssertEqual(test.questions[0].annotation, "First note")
+        XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
+
+        // Empty text removes the files.
+        try WorkspaceWriter.saveAnnotation("   ", for: test.questions[0], in: test)
+        try WorkspaceWriter.saveGroundTruth("", for: test)
+        XCTAssertFalse(ws.exists("W-1/W-1_query/W-1_annotation.md"))
+        XCTAssertFalse(ws.exists("W-1/W-1_ground_truth.bib"))
+
+        let old = try scanOne(ws, "W-2")
+        try WorkspaceWriter.saveAnnotation("Older folder", for: old.questions[1], in: old)
+        XCTAssertTrue(ws.exists("W-2/W-2_variant2/W-2_variant2_annotation.md"))
+        XCTAssertEqual(try scanOne(ws, "W-2").questions[1].annotation, "Older folder")
+
+        // A question with no query folder yet gets the standard one.
+        try ws.makeFolder("W-3")
+        let empty = try scanOne(ws, "W-3")
+        try WorkspaceWriter.saveAnnotation("Nothing here yet", for: empty.questions[0], in: empty)
+        XCTAssertTrue(ws.exists("W-3/W-3_query/W-3_annotation.md"))
+    }
+
     // MARK: Workspace
 
     func testWorkspaceListsTestsInNaturalOrderAndOtherItems() throws {

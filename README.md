@@ -36,11 +36,21 @@ a detail pane.
   the test folder in Finder; right-click for the artifacts of each variant.
 - **Research Questions** — one row per research question (the same sheet the
   export writes): test ID, variant, question, references found, the count in
-  the file name, whether they match, and the number of key clashes. Double-click a row to open its
+  the file name, whether they match, the annotation and the number of key
+  clashes. The Tests list also shows each test's ground truth. Double-click a row to open its
   report PDF.
-- **Detail pane** — the selected test: each research question's text, its
-  reference count, any clashing citation keys (with line numbers), its files
-  and its issues. Double-click a file (or select it
+- **Detail pane** (the inspector) — the selected test: its **ground truth**
+  and each research question's text, **annotation**, reference count, any
+  clashing citation keys (with line numbers), files and issues. Every
+  research question has a copy button beside it, and a multi-RQ test has
+  **Copy All Research Questions**.
+- **Ground truth** — for each test, the BibTeX entry of a published paper
+  asking the same research questions (Edit… or Add… in the inspector, ⇧⌘G).
+  It is shown as an APA 7 reference with the DOI written `doi:10.1234/abcd`,
+  and **Copy Reference** (rich text, so italics survive a paste) or **Copy
+  DOI** copy it.
+- **Annotations** — a brief note on each research question, typed in the
+  inspector and saved automatically. Double-click a file (or select it
   and press ⌘↓) to open it in its default app; right-click to reveal it in
   Finder or copy its path.
 - **Search** (⌘F, in the toolbar) filters by test ID or research question.
@@ -121,9 +131,10 @@ built by `scripts/build-app.sh`, but not when you use `swift run`.
 
 ## Where things are stored
 
-- Test runs: only in the workspace folder you open. Scanning only reads; the
-  only thing the app writes there is a new test folder from New Test (and an
-  export, if you save it there).
+- Test runs: only in the workspace folder you open. Scanning only reads. The
+  app writes there only when you ask: a new test folder from New Test, a
+  ground truth (`ID_ground_truth.bib`), annotations (`…_annotation.md`) and
+  an export, if you save it there.
 - Preferences and recent workspaces: the standard macOS defaults domain
   (`defaults read org.qdvc.autolitreviewtester`).
 - Exports: wherever you choose in the Save panel.
@@ -141,6 +152,9 @@ built by `scripts/build-app.sh`, but not when you use `swift run`.
 | ⇧⌘E / ⌥⇧⌘E | Export as CSV / HTML |
 | ⌘↓ | Open the report PDF of the selected research question |
 | ⇧⌘C | Copy the selected research question |
+| ⌥⇧⌘C | Copy all of the test's research questions |
+| ⇧⌘G | Add or edit the test's ground truth |
+| ⌃⌘C / ⌃⌥⌘C | Copy the ground truth's APA 7 reference / DOI |
 | ⌥⌘R | Reveal the selected file or test in Finder |
 | ⌘, | Settings |
 | Double-click | Tests: open the folder; Research Questions: open the report PDF; detail pane: open the file |
@@ -148,7 +162,8 @@ built by `scripts/build-app.sh`, but not when you use `swift run`.
 ## Documentation
 
 - **[docs/FILE_FORMAT.md](docs/FILE_FORMAT.md)** — the workspace layout, file
-  names, the checks and their messages, reference counting and the exports.
+  names, the checks and their messages, reference counting, ground truth and
+  annotations, APA 7 formatting and the exports.
 - **[docs/HIG.md](docs/HIG.md)** — the window layout and its precedents in
   Apple's Human Interface Guidelines and apps.
 - **[docs/MAINTENANCE.md](docs/MAINTENANCE.md)** — architecture, modules,

@@ -10,6 +10,8 @@ Sources/AutoLitReviewCore/    Foundation-only model layer, unit-tested
   BibTeX.swift                the reference counter
   Scanner.swift               WorkspaceScanner: reads a workspace and checks it
   Export.swift                CSV and HTML exports
+  Reference.swift             BibTeX field parser, LaTeX to text, names, APA 7
+  GroundTruth.swift           GroundTruth; WorkspaceWriter (ground truth, annotations)
   NewTest.swift               NewTestDraft, DropRouting, TestCreator
   TextSupport.swift           text reading, list formatting, plurals
 Sources/QDVCAutoLitReviewTester/  SwiftUI/AppKit front-end
@@ -18,6 +20,8 @@ Sources/QDVCAutoLitReviewTester/  SwiftUI/AppKit front-end
   ContentView.swift           toolbar, split view, status bar, welcome screen
   SidebarView.swift, TablesView.swift, DetailView.swift
   NewTestSheet.swift          the New Test sheet and its drop targets
+  GroundTruthSheet.swift      entering a ground truth, with a live APA 7 preview
+  ReferenceViews.swift        CopyButton; AttributedString/RTF for references
   Commands.swift              menu-bar commands
   StatusViews.swift, Platform.swift, Prefs.swift, SettingsView.swift
 Tests/AutoLitReviewCoreTests/ XCTest suites
@@ -57,7 +61,14 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 ## 3. Behaviour that must be preserved
 
 - **Scanning never writes.** The only writes to a workspace are New Test's
-  folder and an export saved there.
+  folder, an export saved there, and what the tester enters in the
+  inspector: a ground truth (`ID_ground_truth.bib`) and annotations
+  (`…_annotation.md`), both optional and never counted as issues when absent.
+- **Annotations save themselves** 0.7 s after typing stops, and at once when
+  the app goes to the background or quits or the workspace closes
+  (`AppModel.flushAnnotations`). A draft is kept until a scan shows the same
+  text on disk; if the file changed elsewhere meanwhile, the file wins.
+- **The ground truth's DOI is `doi:10.…`**, never a URL (FILE_FORMAT §5).
 - **New Test never changes the originals**: it copies, assembles under a
   hidden name and renames into place, and removes the hidden folder on
   failure. It recounts the BibTeX file at creation time.
@@ -83,9 +94,13 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
   stray `@`s, key clashes and their line numbers, missing keys, keys with
   spaces, unbalanced files, encodings.
 - **ScannerTests** — complete single- and multi-RQ tests, each error and
-  warning, older names, numbering problems, stray items, the workspace level,
-  name parsing.
-- **ExportTests** — CSV quoting and rows, HTML escaping and structure.
+  warning, older names, numbering problems, stray items, ground truth and
+  annotations (reading and writing), the workspace level, name parsing.
+- **ReferenceTests** — field parsing (quotes, `#`, macros, comments), LaTeX
+  to text, names (particles, suffixes, organisations), APA 7 for each entry
+  type, 21+ authors, DOI normalisation, ground-truth problems.
+- **ExportTests** — CSV quoting and rows, HTML escaping and structure, key
+  clashes, annotations and the ground truth.
 - **NewTestTests** — validation messages, planned names, creation (originals
   untouched, recounting, refusal of an existing ID, cleanup on failure) and
   drop routing.
@@ -95,6 +110,10 @@ The core also builds and tests with a Linux Swift toolchain, because the
 manifest declares the app target only on macOS.
 
 ## 5. Roadmap
+
+- Sentence-case article titles for APA (needs a way to protect proper nouns
+  beyond braces).
+- Look up a ground truth's BibTeX from its DOI.
 
 - Watch the workspace with FSEvents instead of rescanning on activation.
 - Export only the tests shown (filter and search), as an option.

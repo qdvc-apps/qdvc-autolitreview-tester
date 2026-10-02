@@ -43,6 +43,11 @@ struct TestsTableView: View {
                 Text(row.issueCount == 0 ? "" : String(row.issueCount)).monospacedDigit()
             }
             .width(min: 40, ideal: 50, max: 70)
+
+            TableColumn("Ground Truth", value: \.groundTruth) { row in
+                Text(row.groundTruth).lineLimit(1).foregroundStyle(.secondary).help(row.groundTruth)
+            }
+            .width(min: 90, ideal: 150)
         }
         .contextMenu(forSelectionType: String.self) { ids in
             if let id = ids.first, let test = model.scan?.test(id) {
@@ -108,6 +113,11 @@ struct QuestionsTableView: View {
             }
             .width(min: 40, ideal: 48, max: 60)
 
+            TableColumn("Annotation", value: \.annotation) { row in
+                Text(row.annotation).lineLimit(1).foregroundStyle(.secondary).help(row.annotation)
+            }
+            .width(min: 90, ideal: 180)
+
             TableColumn("Key Clashes", value: \.clashCount) { row in
                 Text(row.clashCount == 0 ? "" : String(row.clashCount))
                     .monospacedDigit()
@@ -170,6 +180,17 @@ struct TestContextMenu: View {
                 }
             }
         }
+        if test.questions.count > 1 {
+            Button("Copy All Research Questions") { model.copyAllQuestions(test) }
+        }
+        Divider()
+        Button(test.groundTruth == nil ? "Add Ground Truth\u{2026}" : "Edit Ground Truth\u{2026}") {
+            model.beginEditGroundTruth(test)
+        }
+        Button("Copy Ground Truth Reference") { model.copyGroundTruthReference(test) }
+            .disabled(test.groundTruth?.reference == nil)
+        Button("Copy Ground Truth DOI") { model.copyGroundTruthDOI(test) }
+            .disabled(test.groundTruth?.doi == nil)
         Divider()
         Button("Open Test Folder") { model.openTestFolder(test.id) }
         Button("Reveal in Finder") { model.reveal(test.folder) }

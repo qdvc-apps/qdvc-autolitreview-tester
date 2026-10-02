@@ -70,6 +70,11 @@ struct ContentView: View {
             case .newTest:
                 NewTestSheet()
                     .environment(model)
+            case .groundTruth(let testID):
+                GroundTruthSheet(testID: testID,
+                                 initialText: model.scan?.test(testID)?.groundTruth?.source ?? "",
+                                 hasExisting: model.scan?.test(testID)?.groundTruth != nil)
+                    .environment(model)
             }
         }
         .alert(model.alert?.title ?? "",
@@ -81,6 +86,12 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.appBecameActive()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)) { _ in
+            model.flushAnnotations()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            model.flushAnnotations()
         }
     }
 

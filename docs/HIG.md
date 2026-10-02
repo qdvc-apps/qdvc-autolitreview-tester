@@ -44,6 +44,28 @@ Status is shown by a symbol whose shape differs (check, triangle, octagon) as
 well as its colour, with the status as the tooltip and accessibility label, so
 colour is never the only cue.
 
+### 3.1 Copying from the inspector
+
+Text in a list row can be selected, but dragging across it also fights the
+row selection, so everything worth copying has its own button, as in
+Passwords and Contacts: a copy button beside each research question (and Copy
+in its context menu), Copy All Research Questions in the test header for
+multi-RQ tests, and Copy Reference and Copy DOI under the ground truth. The
+button's symbol turns into a check mark for a moment to confirm the copy.
+Each has a menu item and shortcut in the Test menu.
+
+### 3.2 Ground truth and annotations
+
+The ground truth is a section of its own near the top of the inspector,
+because it belongs to the whole test: the APA 7 reference in the same serif
+face as the research questions, then Copy Reference, Copy DOI and Edit…. It
+is entered in a sheet (a BibTeX editor with a live APA 7 preview and the DOI
+it found), since it is pasted rather than typed.
+
+Each research question has an annotation field just under its text. There is
+no Save button: it saves itself a moment after typing stops, as Notes and
+Reminders do.
+
 ## 4. Opening files
 
 Artifacts are opened in their default apps (Preview, the browser, a BibTeX

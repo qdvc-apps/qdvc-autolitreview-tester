@@ -15,6 +15,9 @@ struct DetailView: View {
                     Section {
                         TestHeader(test: test)
                     }
+                    Section("Ground Truth") {
+                        GroundTruthRows(test: test)
+                    }
                     if !test.issues.isEmpty {
                         Section("Test") {
                             ForEach(Array(test.issues.enumerated()), id: \.offset) { _, issue in
@@ -26,6 +29,7 @@ struct DetailView: View {
                         Section(question.title) {
                             QuestionTextRow(question: question)
                                 .id(question.id)
+                            AnnotationRow(question: question)
                             ReferenceCountRow(question: question)
                             if !question.keyClashes.isEmpty {
                                 KeyClashesRow(clashes: question.keyClashes)
@@ -74,6 +78,11 @@ private struct TestHeader: View {
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
                 Spacer()
+                if test.questions.count > 1, test.questions.contains(where: { $0.question != nil }) {
+                    CopyButton(title: "Copy All Research Questions") { model.copyAllQuestions(test) }
+                        .buttonStyle(.borderless)
+                        .help("Copy every research question, one per line (\u{201C}Variant 1: \u{2026}\u{201D})")
+                }
                 Button {
                     model.openExternally(test.folder)
                 } label: {
@@ -107,17 +116,105 @@ private struct TestHeader: View {
     }
 }
 
+/// The research question, with a copy button beside it (and Copy in its
+/// context menu), so it can be copied without selecting the text.
 private struct QuestionTextRow: View {
+    @Environment(AppModel.self) private var model
     let question: ResearchQuestion
 
     var body: some View {
-        Text(question.question ?? "Research question not available")
-            .font(.system(.body, design: .serif))
-            .italic(question.question == nil)
-            .foregroundStyle(question.question == nil ? Color.secondary : Color.primary)
-            .textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, 2)
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(question.question ?? "Research question not available")
+                .font(.system(.body, design: .serif))
+                .italic(question.question == nil)
+                .foregroundStyle(question.question == nil ? Color.secondary : Color.primary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if question.question != nil {
+                CopyButton(title: "Copy Research Question", iconOnly: true) { model.copyQuestion(question) }
+                    .buttonStyle(.borderless)
+                    .controlSize(.large)
+            }
+        }
+        .padding(.vertical, 2)
+        .contextMenu {
+            Button("Copy Research Question") { model.copyQuestion(question) }
+                .disabled(question.question == nil)
+        }
+    }
+}
+
+/// The tester's brief note on a research question, saved automatically to
+/// `…_annotation.md` beside the question's other files.
+private struct AnnotationRow: View {
+    @Environment(AppModel.self) private var model
+    let question: ResearchQuestion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("Annotation", systemImage: "square.and.pencil")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField("Annotation",
+                      text: Binding(get: { model.annotationText(for: question) },
+                                    set: { model.setAnnotation($0, for: question.id) }),
+                      prompt: Text("Add a brief note about this research question"),
+                      axis: .vertical)
+                .lineLimit(1...6)
+                .textFieldStyle(.roundedBorder)
+                .labelsHidden()
+        }
+        .padding(.vertical, 2)
+        .help("Saved automatically to \(Naming.annotationFileName(testID: question.testID, variant: question.variant))")
+    }
+}
+
+/// The ground truth: the APA 7 reference, with buttons to copy it or just
+/// its DOI, and to edit it.
+private struct GroundTruthRows: View {
+    @Environment(AppModel.self) private var model
+    let test: TestRun
+
+    var body: some View {
+        if let truth = test.groundTruth {
+            if let reference = truth.reference {
+                Text(reference.attributed)
+                    .font(.system(.body, design: .serif))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 2)
+                    .contextMenu {
+                        Button("Copy Reference") { model.copyGroundTruthReference(test) }
+                        Button("Copy DOI") { model.copyGroundTruthDOI(test) }
+                            .disabled(truth.doi == nil)
+                    }
+            } else if let problem = truth.problem {
+                Label(problem, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .font(.callout)
+            }
+            HStack(spacing: 12) {
+                CopyButton(title: "Copy Reference") { model.copyGroundTruthReference(test) }
+                    .disabled(truth.reference == nil)
+                    .help("Copy the APA 7 reference (italics kept when pasted into Word, Pages or Mail)")
+                CopyButton(title: "Copy DOI") { model.copyGroundTruthDOI(test) }
+                    .disabled(truth.doi == nil)
+                    .help(truth.doi.map { "Copy \($0)" } ?? "The entry has no DOI")
+                Spacer()
+                Button("Edit\u{2026}") { model.beginEditGroundTruth(test) }
+            }
+            .buttonStyle(.borderless)
+        } else {
+            HStack {
+                Text("A published paper asking the same research questions, entered as BibTeX.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button("Add\u{2026}") { model.beginEditGroundTruth(test) }
+            }
+        }
     }
 }
 

@@ -54,6 +54,16 @@ public enum Naming {
         filePrefix(testID: testID, variant: variant) + kind.nameSuffix(referenceCount: referenceCount)
     }
 
+    /// `ID_annotation.md` or `ID_variantN_annotation.md` (kept in the query folder).
+    public static func annotationFileName(testID: String, variant: Int?) -> String {
+        filePrefix(testID: testID, variant: variant) + "annotation.md"
+    }
+
+    /// `ID_ground_truth.bib` (kept in the test folder; one per test).
+    public static func groundTruthFileName(testID: String) -> String {
+        "\(testID)_ground_truth.bib"
+    }
+
     /// The canonical path of an artifact relative to the test folder, e.g.
     /// `ABCD-123_query_variant2/ABCD-123_variant2_query_asked.png`.
     public static func relativePath(_ kind: ArtifactKind, testID: String, variant: Int?, referenceCount: Int? = nil) -> String {

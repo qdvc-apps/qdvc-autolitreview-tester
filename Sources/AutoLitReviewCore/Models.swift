@@ -186,6 +186,11 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
     /// Citation keys shared by separate entries in the BibTeX file. These are
     /// for information only: they don't count as issues or affect the status.
     public var keyClashes: [KeyClash]
+    /// The tester's note on this research question (`…_annotation.md`,
+    /// trimmed), if there is one. Optional; never an issue when absent.
+    public var annotation: String?
+    /// Where the annotation was read from, if it exists.
+    public var annotationFile: URL?
 
     public init(testID: String, variant: Int?, question: String? = nil, files: [ArtifactFile] = [],
                 referencesFound: Int? = nil, referencesInFileName: Int? = nil, issues: [Issue] = [],
@@ -198,6 +203,8 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
         self.referencesInFileName = referencesInFileName
         self.issues = issues
         self.keyClashes = keyClashes
+        self.annotation = nil
+        self.annotationFile = nil
     }
 
     public var id: String { "\(testID)#\(variant ?? 0)" }
@@ -231,13 +238,18 @@ public struct TestRun: Hashable, Sendable, Identifiable {
     /// Problems that belong to the test as a whole (variant numbering,
     /// unrecognised items).
     public var issues: [Issue]
+    /// The "ground truth" paper for the test (`ID_ground_truth.bib`), if the
+    /// tester has entered one. Optional; never an issue when absent.
+    public var groundTruth: GroundTruth?
 
-    public init(id: String, folder: URL, kind: TestKind, questions: [ResearchQuestion], issues: [Issue]) {
+    public init(id: String, folder: URL, kind: TestKind, questions: [ResearchQuestion], issues: [Issue],
+                groundTruth: GroundTruth? = nil) {
         self.id = id
         self.folder = folder
         self.kind = kind
         self.questions = questions
         self.issues = issues
+        self.groundTruth = groundTruth
     }
 
     /// Every issue of the test and of its research questions.
