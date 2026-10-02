@@ -101,6 +101,14 @@ is never counted, and neither is anything inside `@comment{…}`. Text between
 entries is a comment in BibTeX and is ignored. Type names are matched without
 regard to case, and spaces are allowed between `@` and the type.
 
+Citation keys may contain spaces (`@article{Smith 2020, …}`). BibTeX itself
+doesn't allow them, but the tool under test sometimes writes them, so they are
+tolerated when verifying a file: such an entry counts like any other, and no
+warning is given. Spaces before and after a key are ignored, so `{ Smith 2020 ,`
+and `{Smith 2020,` are the same key for the duplicate check. A tab or line
+break still ends a key. This applies only to checking; the app never rewrites
+a BibTeX file.
+
 ### 3.3 Warnings
 
 A warning is worth a look but doesn't make the test incomplete:

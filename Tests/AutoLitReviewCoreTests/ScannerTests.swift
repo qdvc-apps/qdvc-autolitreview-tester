@@ -218,6 +218,16 @@ final class ScannerTests: XCTestCase {
         XCTAssertTrue(test.hasIssue(.warning, containing: "ends inside an entry"))
     }
 
+    func testKeysWithSpacesStillCountAndMatch() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "SP-1", skip: ["bib"])
+        try ws.write("SP-1/SP-1_references_n2.bib",
+                     "@article{Smith 2020, title={A}}\n@inproceedings{van der Berg 2021, title={B}}\n")
+        let test = try scanOne(ws, "SP-1")
+        XCTAssertEqual(test.questions[0].referencesFound, 2)
+        XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
+    }
+
     // MARK: Workspace
 
     func testWorkspaceListsTestsInNaturalOrderAndOtherItems() throws {

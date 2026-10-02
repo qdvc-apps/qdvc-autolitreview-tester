@@ -64,7 +64,8 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **Older names are accepted with a warning** (FILE_FORMAT §2.3), and the
   standard name wins when both exist. New tests use only standard names.
 - **Reference counting** follows FILE_FORMAT §3.2; the CSV and HTML exports and
-  the app show the same numbers.
+  the app show the same numbers. Spaces inside citation keys are tolerated on
+  purpose (the tool under test writes them); don't "fix" this without asking.
 - **Exports cover every test**, not just what the filters show.
 - **Artifacts open in their default apps**; there is no in-app preview.
 - Test IDs are A–Z, 0–9 and dashes only, everywhere.
@@ -76,7 +77,8 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **NamingTests** — ID validation and sanitising, canonical names, natural
   sort, list helpers.
 - **BibTeXTests** — special entry types, parenthesised entries, nested braces,
-  stray `@`s, duplicate and missing keys, unbalanced files, encodings.
+  stray `@`s, duplicate and missing keys, keys with spaces, unbalanced files,
+  encodings.
 - **ScannerTests** — complete single- and multi-RQ tests, each error and
   warning, older names, numbering problems, stray items, the workspace level,
   name parsing.

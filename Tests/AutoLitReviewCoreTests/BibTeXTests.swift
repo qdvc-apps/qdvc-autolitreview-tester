@@ -55,6 +55,24 @@ final class BibTeXTests: XCTestCase {
         XCTAssertEqual(summary.entriesWithoutKey, 1)
     }
 
+    func testSpacesInsideKeysAreTolerated() {
+        let text = """
+        @article{Smith 2020, title={A}}
+        @article{ smith 2020 , title={B}}
+        @book(Jones et al 2019, title = {C})
+        @misc{Lee  2021
+          , title={D}}
+        @article{Smith2020, title={E}}
+        @article{   , title={F}}
+        """
+        let summary = BibTeX.summary(of: text)
+        XCTAssertEqual(summary.entries, 6)
+        // Leading and trailing spaces are dropped, so the second key repeats the first.
+        XCTAssertEqual(summary.duplicateKeys, ["smith 2020"])
+        XCTAssertEqual(summary.entriesWithoutKey, 1)
+        XCTAssertFalse(summary.endsInsideEntry)
+    }
+
     func testUnbalancedEnd() {
         let summary = BibTeX.summary(of: "@article{a, title={ok}}\n@article{b, title={never closed}\n")
         XCTAssertEqual(summary.entries, 2)

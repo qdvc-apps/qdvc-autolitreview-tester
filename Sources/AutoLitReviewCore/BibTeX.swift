@@ -20,7 +20,8 @@ public struct BibTeXSummary: Hashable, Sendable {
 /// parser: it finds each `@` that starts an entry at the top level of the
 /// file, reads its type and key, and skips the body by matching braces, so
 /// an `@` inside a field value (an e-mail address, say) is never counted.
-/// Text between entries is a comment in BibTeX and is ignored.
+/// Text between entries is a comment in BibTeX and is ignored. Unlike
+/// BibTeX, it accepts spaces inside citation keys.
 public enum BibTeX {
     /// Entry types that aren't references.
     public static let nonReferenceTypes: Set<String> = ["string", "preamble", "comment"]
@@ -55,7 +56,11 @@ public enum BibTeX {
                 while i < n, isSpace(s[i]) { i += 1 }
                 let keyStart = i
                 while i < n, !endsKey(s[i], parenthesised: parenthesised) { i += 1 }
-                let key = String(String.UnicodeScalarView(s[keyStart..<i]))
+                // Spaces are tolerated inside a key (the tool under test
+                // sometimes writes them), so only trailing ones are dropped.
+                var keyEnd = i
+                while keyEnd > keyStart, s[keyEnd - 1] == " " { keyEnd -= 1 }
+                let key = String(String.UnicodeScalarView(s[keyStart..<keyEnd]))
                 if key.isEmpty {
                     result.entriesWithoutKey += 1
                 } else {
@@ -107,7 +112,10 @@ public enum BibTeX {
         c == " " || c == "\t" || c == "\n" || c == "\r" || c == "\u{0B}" || c == "\u{0C}"
     }
 
+    /// What ends a citation key. A space doesn't: keys like `Smith 2020`
+    /// are tolerated, though BibTeX itself doesn't allow them. Tabs and line
+    /// breaks still do.
     private static func endsKey(_ c: Unicode.Scalar, parenthesised: Bool) -> Bool {
-        c == "," || c == "{" || c == "}" || isSpace(c) || (parenthesised && c == ")")
+        c == "," || c == "{" || c == "}" || (c != " " && isSpace(c)) || (parenthesised && c == ")")
     }
 }
