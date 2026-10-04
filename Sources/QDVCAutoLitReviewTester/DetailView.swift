@@ -107,6 +107,15 @@ private struct TestHeader: View {
             }
             Text(summary)
                 .foregroundStyle(.secondary)
+            if test.hasMissingArtifacts {
+                Button {
+                    model.beginEditTest(test)
+                } label: {
+                    Label("Supply Missing Artifacts\u{2026}", systemImage: "tray.and.arrow.down")
+                }
+                .controlSize(.small)
+                .help("Reopen the data entry form to add the missing files (\u{2325}\u{2318}E)")
+            }
             if let date = test.dateText {
                 Label("Exported \(date)", systemImage: "calendar")
                     .foregroundStyle(.secondary)

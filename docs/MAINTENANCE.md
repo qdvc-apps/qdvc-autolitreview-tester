@@ -17,6 +17,7 @@ Sources/AutoLitReviewCore/    Foundation-only model layer, unit-tested
   Reference.swift             BibTeX field parser, LaTeX to text, names, APA 7
   GroundTruth.swift           GroundTruth; WorkspaceWriter (ground truth, annotations)
   NewTest.swift               NewTestDraft, DropRouting, TestCreator
+  Completion.swift            CompletionDraft, TestCreator.complete (missing artifacts)
   TextSupport.swift           text reading, list formatting, plurals
 Sources/QDVCAutoLitReviewTester/  SwiftUI/AppKit front-end
   AutoLitReviewTesterApp.swift    the App, the window, AppDelegate (⌘F)
@@ -25,6 +26,7 @@ Sources/QDVCAutoLitReviewTester/  SwiftUI/AppKit front-end
   SidebarView.swift, TablesView.swift, DetailView.swift
   NewTestSheet.swift          the New Test sheet and its drop targets
   AddVariantsSheet.swift      adding variants to an existing multi-RQ test
+  EditTestSheet.swift         supplying an existing test's missing artifacts
   GroundTruthSheet.swift      entering a ground truth, with a live APA 7 preview
   ReferenceViews.swift        CopyButton; AttributedString/RTF for references
   Commands.swift              menu-bar commands
@@ -82,6 +84,9 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **New Test never changes the originals**: it copies, assembles under a
   hidden name and renames into place, and removes the hidden folder on
   failure. It recounts the BibTeX file at creation time.
+- **Supplying missing artifacts never changes a file the test has**
+  (`TestCreator.complete`), except filling an empty `RQ_asked.md`; it checks
+  every new name first and removes what it added if a copy fails.
 - **Add Variants never changes or overwrites anything in the test**
   (`TestCreator.addVariants`): it checks every new top-level name first,
   numbers on from the highest variant, and only works on multi-RQ tests.
@@ -124,6 +129,10 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **ExportTests** — CSV quoting and rows, HTML escaping and structure, the
   Markdown layout and escaping, key clashes, annotations, the ground truth
   and export dates.
+- **CompletionTests** — supplying missing artifacts (standard names, older
+  folders, a missing variant query folder, BibTeX counts, partial saves),
+  filling a missing or empty research question, never overwriting, cleanup
+  after a failed copy, and annotation-only edits.
 - **DOMChecksTests** — the YAML subset and its errors, reading the config
   (values, flow form, problems), page text (entities, tags, scripts, styles,
   comments, whitespace, form values), the "Show all N" forms, and the checks

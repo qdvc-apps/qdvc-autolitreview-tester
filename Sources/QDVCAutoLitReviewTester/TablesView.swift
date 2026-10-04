@@ -193,8 +193,11 @@ struct TestContextMenu: View {
         if test.questions.count > 1 {
             Button("Copy All Research Questions") { model.copyAllQuestions(test) }
         }
+        Divider()
+        Button(test.hasMissingArtifacts ? "Supply Missing Artifacts\u{2026}" : "Edit Test\u{2026}") {
+            model.beginEditTest(test)
+        }
         if test.kind == .multi {
-            Divider()
             Button("Add Variants\u{2026}") { model.beginAddVariants(test) }
         }
         Divider()

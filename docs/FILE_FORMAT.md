@@ -363,3 +363,20 @@ the new names is already taken, nothing is written. The files are assembled
 in a hidden folder inside the test (`.adding-variants-<uuid>`) and moved into
 place at the end. A single-RQ test can't take variants this way, because its
 files would have to be renamed to `…_variant1_…`.
+
+### 6.2 Supplying missing artifacts
+
+Test → Supply Missing Artifacts… (called Edit Test… when nothing is missing)
+reopens the data entry form for an existing test. Artifacts the test already
+has are shown ticked and are never changed; each missing one is a drop target
+(several files can be dropped at once and go to the right slots; a file for
+an artifact the test already has is refused). A missing research question can
+be typed, and an empty `RQ_asked.md` is filled in place — the only file ever
+written over. Annotations can be edited too.
+
+New files get the standard names (§2.1, §2.2), and a new BibTeX file is named
+with its count. Query files go in the folder that already holds the
+question's query files, whatever it is called, or the standard query folder
+if there is none. It is fine to save with some artifacts still missing. If a
+new name turns out to be taken, nothing is written; if a copy fails part-way,
+the files added so far are removed again.

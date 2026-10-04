@@ -248,8 +248,9 @@ struct QuestionEditor: View {
     }
 }
 
-/// A drop target for one artifact, showing what has been chosen.
-private struct FileSlotRow: View {
+/// A drop target for one artifact, showing what has been chosen. Shared
+/// with the Edit Test sheet.
+struct FileSlotRow: View {
     let kind: ArtifactKind
     let url: URL?
     let summary: BibTeXSummary?

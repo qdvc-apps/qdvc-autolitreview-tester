@@ -87,6 +87,11 @@ struct TesterCommands: Commands {
                 .keyboardShortcut("c", modifiers: [.command, .option, .shift])
                 .disabled(model.focusedTest?.questions.contains { $0.question != nil } != true)
             Divider()
+            Button(model.focusedTest?.hasMissingArtifacts == true ? "Supply Missing Artifacts\u{2026}" : "Edit Test\u{2026}") {
+                model.beginEditTest(model.focusedTest)
+            }
+            .keyboardShortcut("e", modifiers: [.command, .option])
+            .disabled(model.focusedTest == nil)
             Button("Add Variants\u{2026}") { model.beginAddVariants(model.focusedTest) }
                 .keyboardShortcut("n", modifiers: [.command, .option])
                 .disabled(model.focusedTest?.kind != .multi)

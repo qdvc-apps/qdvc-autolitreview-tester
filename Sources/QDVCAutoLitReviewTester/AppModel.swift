@@ -180,12 +180,15 @@ enum ActiveSheet: Identifiable, Equatable {
     case groundTruth(String)
     /// Adding variants to the multi-RQ test with this ID.
     case addVariants(String)
+    /// Supplying the missing artifacts (and editing annotations) of the test with this ID.
+    case editTest(String)
 
     var id: String {
         switch self {
         case .newTest: return "new-test"
         case .groundTruth(let testID): return "ground-truth-\(testID)"
         case .addVariants(let testID): return "add-variants-\(testID)"
+        case .editTest(let testID): return "edit-test-\(testID)"
         }
     }
 }
@@ -566,6 +569,29 @@ final class AppModel {
     func copyGroundTruthDOI(_ test: TestRun?) {
         guard let doi = test?.groundTruth?.bareDOI else { return }
         Platform.copy(doi)
+    }
+
+    // MARK: - Edit test (supply missing artifacts)
+
+    func beginEditTest(_ test: TestRun?) {
+        guard let test else { return }
+        flushAnnotations()
+        activeSheet = .editTest(test.id)
+    }
+
+    /// Saves what was supplied; returns a problem to show (keeping the sheet
+    /// open), or nil when done (the sheet closes and the test stays selected).
+    func saveCompletion(_ draft: CompletionDraft) -> String? {
+        guard let test = scan?.test(draft.testID) else { return "The test \(draft.testID) is no longer in the workspace." }
+        do {
+            try TestCreator.complete(draft, test: test)
+        } catch {
+            return error.localizedDescription
+        }
+        for question in draft.questions { annotationDrafts[question.id] = nil }
+        activeSheet = nil
+        rescan(selecting: draft.testID)
+        return nil
     }
 
     // MARK: - Add variants

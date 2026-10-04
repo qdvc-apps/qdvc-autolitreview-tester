@@ -89,6 +89,11 @@ show the chosen file's name (and, for BibTeX, the number of references).
   there; the footer says what is still missing, one item at a time.
 - "Files to be created" previews the folder, left-aligned like a file list.
 - Each research question has an optional annotation field under the question.
+- **Supply Missing Artifacts / Edit Test** reuses the layout for an existing
+  test: present artifacts are ticked rows ("In the test"), missing ones are
+  the same drop targets, and the section header says how many are missing.
+  The inspector offers it as a button only when something is missing, so it
+  appears where the problem is shown.
 - **Add Variants** reuses the same sheet layout (one section per new variant)
   without the ID and type, and says in its first line which variants the test
   already has and where the numbering continues.

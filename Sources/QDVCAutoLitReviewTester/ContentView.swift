@@ -76,6 +76,11 @@ struct ContentView: View {
                                  initialText: model.scan?.test(testID)?.groundTruth?.source ?? "",
                                  hasExisting: model.scan?.test(testID)?.groundTruth != nil)
                     .environment(model)
+            case .editTest(let testID):
+                if let test = model.scan?.test(testID) {
+                    EditTestSheet(test: test)
+                        .environment(model)
+                }
             case .addVariants(let testID):
                 if let test = model.scan?.test(testID) {
                     AddVariantsSheet(test: test)

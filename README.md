@@ -70,6 +70,12 @@ a detail pane.
   question. The BibTeX file's references are counted to name it. **Create
   Test** is enabled once everything is there. Each research question can
   also have an optional annotation.
+- **Supply Missing Artifacts** (⌥⌘E, or the button in the inspector when a
+  test is incomplete) reopens the data entry form for an existing test: what
+  it already has is ticked and left alone, and the missing screenshots, BibTeX
+  file, reports or research question can be dropped or typed in. Annotations
+  can be edited there too (the command is called Edit Test… when nothing is
+  missing).
 - **Add Variants** (⌥⌘N, or the button in the inspector's header) adds
   research questions to an existing multi-RQ test, numbered on from its
   highest variant, in the same way: type the question (and an optional
@@ -170,6 +176,7 @@ built by `scripts/build-app.sh`, but not when you use `swift run`.
 | ⌘1, ⌘2 | Tests, Research Questions |
 | ⌘N | New test |
 | ⌥⌘N | Add variants to the selected multi-RQ test |
+| ⌥⌘E | Supply missing artifacts / edit the selected test |
 | ⌘O | Open workspace |
 | ⇧⌘W | Close workspace |
 | ⌘F | Search |
