@@ -49,6 +49,10 @@ public struct BibTeXSummary: Hashable, Sendable {
     /// The distinct dates after "EXPORT DATE:" in the file, earliest first
     /// (usually one, from the exporter's header).
     public var exportDates: [ExportDate] = []
+    /// How many entries have an abstract, out of how many (from the full
+    /// field parser, so a file it can't fully read may differ slightly from
+    /// `entries`).
+    public var abstracts = AbstractCoverage(withAbstract: 0, total: 0)
 
     public init() {}
 }
@@ -145,6 +149,9 @@ public enum BibTeX {
             return KeyClash(occurrences: occurrences)
         }
         result.exportDates = ExportDate.find(in: text)
+        let parsed = entries(in: text)
+        result.abstracts = AbstractCoverage(withAbstract: parsed.filter { $0.first("abstract") != nil }.count,
+                                            total: parsed.count)
         return result
     }
 

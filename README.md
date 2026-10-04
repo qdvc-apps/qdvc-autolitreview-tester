@@ -9,7 +9,8 @@ folder per test run, named like `ABCD-123`) and the app:
   screenshots, the research question, the BibTeX references, the report PDF
   and the report DOM;
 - counts the entries in every `.bib` file and checks them against the count in
-  its name (`ABCD-123_references_n293.bib` must hold 293 references);
+  its name (`ABCD-123_references_n293.bib` must hold 293 references), and
+  warns when more than half of them have no abstract;
 - optionally, as set in the workspace's `workspace.yml`, checks each report
   DOM for the research question's exact text and for "Show all N
   references", warning when either is missing;

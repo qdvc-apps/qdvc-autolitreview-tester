@@ -224,7 +224,7 @@ final class ScannerTests: XCTestCase {
         let ws = try TempFolder()
         try writeSingleTest(ws, "KC-1", skip: ["bib"])
         try ws.write("KC-1/KC-1_references_n3.bib",
-                     "@article{Smith2025, title={A}}\n@article{Lee2024, title={B}}\n@article{Smith2025, title={C}}\n")
+                     "@article{Smith2025, title={A}, abstract={x}}\n@article{Lee2024, title={B}, abstract={y}}\n@article{Smith2025, title={C}, abstract={z}}\n")
         let test = try scanOne(ws, "KC-1")
         XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
         XCTAssertTrue(test.allIssues.isEmpty)
@@ -236,10 +236,46 @@ final class ScannerTests: XCTestCase {
         let ws = try TempFolder()
         try writeSingleTest(ws, "SP-1", skip: ["bib"])
         try ws.write("SP-1/SP-1_references_n2.bib",
-                     "@article{Smith 2020, title={A}}\n@inproceedings{van der Berg 2021, title={B}}\n")
+                     "@article{Smith 2020, title={A}, abstract={x}}\n@inproceedings{van der Berg 2021, title={B}, abstract={y}}\n")
         let test = try scanOne(ws, "SP-1")
         XCTAssertEqual(test.questions[0].referencesFound, 2)
         XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
+    }
+
+    // MARK: Abstracts
+
+    func testMostlyMissingAbstractsIsAWarning() throws {
+        let ws = try TempFolder()
+        try writeSingleTest(ws, "AB-1", skip: ["bib"])
+        try ws.write("AB-1/AB-1_references_n5.bib", bibtex(5, withAbstract: 2))
+        try writeSingleTest(ws, "AB-2", skip: ["bib"])
+        try ws.write("AB-2/AB-2_references_n4.bib", bibtex(4, withAbstract: 2))   // exactly half: fine
+        try writeSingleTest(ws, "AB-3", skip: ["bib"])
+        try ws.write("AB-3/AB-3_references_n3.bib",
+                     "@article{a, abstract = {}}\n@article{b, abstract = {  }}\n@article{c, abstract = \"Real.\"}\n")
+        try writeSingleTest(ws, "AB-4", skip: ["bib"])
+        try ws.write("AB-4/AB-4_references_n0.bib", "% nothing returned\n")
+        let scan = try WorkspaceScanner.scan(ws.url)
+
+        let one = try XCTUnwrap(scan.test("AB-1"))
+        XCTAssertEqual(one.status, .warnings)
+        XCTAssertEqual(one.questions[0].abstracts, AbstractCoverage(withAbstract: 2, total: 5))
+        XCTAssertTrue(one.hasIssue(.warning, containing: "AB-1_references_n5.bib: 3 of 5 entries (more than half) have no abstract"))
+        XCTAssertEqual(one.questions[0].abstracts?.description, "2 of 5 entries (40%)")
+
+        let two = try XCTUnwrap(scan.test("AB-2"))
+        XCTAssertEqual(two.status, .complete, two.messages.joined(separator: "\n"))
+        XCTAssertFalse(try XCTUnwrap(two.questions[0].abstracts).mostlyMissing)
+
+        // Empty or blank abstract fields don't count.
+        let three = try XCTUnwrap(scan.test("AB-3"))
+        XCTAssertEqual(three.questions[0].abstracts, AbstractCoverage(withAbstract: 1, total: 3))
+        XCTAssertEqual(three.status, .warnings)
+
+        // No entries, nothing to warn about.
+        let four = try XCTUnwrap(scan.test("AB-4"))
+        XCTAssertEqual(four.status, .complete, four.messages.joined(separator: "\n"))
+        XCTAssertFalse(try XCTUnwrap(four.questions[0].abstracts).mostlyMissing)
     }
 
     // MARK: Ground truth and annotations

@@ -12,6 +12,9 @@ every kind of result the app reports.
               and variant 4 has no response screenshot (error)
     DEMO-110  single RQ, complete, with no references found (n0)
 
+Every BibTeX entry has an abstract except in DEMO-105 variant 2, where only
+2 of 7 do (more than half missing is a warning).
+
 workspace.yml turns on both DOM checks. Every report DOM shows its research
 question and "Show all N references", except DEMO-104 variant 1, whose DOM
 shows a reworded question (a warning).
@@ -112,7 +115,9 @@ def html(title, question, refs):
             f"  <button type=\"button\">{button}</button>\n</body></html>\n")
 
 
-def bibtex(count, seed, exported="02 October 2026"):
+def bibtex(count, seed, exported="02 October 2026", abstracts=None):
+    """`count` entries; the first `abstracts` of them (all by default) have an abstract."""
+    with_abstract = count if abstracts is None else abstracts
     header = f"Scopus\nEXPORT DATE: {exported}\n\n"
     if count == 0:
         return header + "% The tool returned no references for this research question.\n"
@@ -127,7 +132,9 @@ def bibtex(count, seed, exported="02 October 2026"):
             f"  title = {{Sample study {i + 1} for seed {seed}}},\n"
             f"  journal = {{{venue}}},\n"
             f"  year = {{{year}}},\n"
-            f"}}\n")
+            + (f"  abstract = {{This sample study {i + 1} reports findings for seed {seed}.}},\n"
+               if i < with_abstract else "")
+            + "}\n")
     return header + "\n".join(entries)
 
 
@@ -159,7 +166,7 @@ def single(test_id, question, refs, named=None, skip=(), dom_question=None):
 
 
 def variant(test_id, number, question, refs, old_names=False, skip=(), exported="02 October 2026",
-            dom_question=None):
+            dom_question=None, abstracts=None):
     folder = WORKSPACE / test_id
     query_name = f"{test_id}_variant{number}" if old_names else f"{test_id}_query_variant{number}"
     query = folder / query_name
@@ -170,7 +177,7 @@ def variant(test_id, number, question, refs, old_names=False, skip=(), exported=
         "query": (query / f"{prefix}query_asked.png", png(rgb=(110, 140, 175))),
         "response": (query / f"{prefix}response_received.png", png(rgb=(120, 165, 140))),
         "rq": (query / f"{prefix}RQ_asked.md", question + "\n"),
-        "bib": (folder / f"{top_prefix}references_n{refs}.bib", bibtex(refs, number * 7 + len(test_id), exported)),
+        "bib": (folder / f"{top_prefix}references_n{refs}.bib", bibtex(refs, number * 7 + len(test_id), exported, abstracts)),
         "pdf": (folder / f"{prefix}report.pdf", pdf(title)),
         "dom": (folder / f"{prefix}report_DOM.html", html(title, dom_question or question, refs)),
     }
@@ -226,7 +233,9 @@ def main():
     variant("DEMO-104", 2, "What are the applications of digital twins in healthcare operations?", 6, old_names=True)
 
     variant("DEMO-105", 1, "What factors influence citizens\u2019 trust in e-government services?", 9)
-    variant("DEMO-105", 2, "Which antecedents of trust in digital public services have been studied?", 7)
+    # Only 2 of 7 entries have an abstract (a warning).
+    variant("DEMO-105", 2, "Which antecedents of trust in digital public services have been studied?", 7,
+            abstracts=2)
     variant("DEMO-105", 4, "How has trust in e-government been measured?", 3, skip=("response",))
 
     single("DEMO-110", "What is known about the use of blockchain for academic credential verification in Oceania?", 0)

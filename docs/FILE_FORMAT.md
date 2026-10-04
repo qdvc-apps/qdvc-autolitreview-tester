@@ -158,8 +158,9 @@ A warning is worth a look but doesn't make the test incomplete:
   start with `ID_`, or doesn't match any artifact), a query-folder file left at
   the top of the test folder, or a file named for another variant;
 - an empty (0-byte) screenshot, BibTeX file, PDF or HTML file;
-- in the BibTeX file: entries without a key, or a file that ends inside an
-  entry (unbalanced braces).
+- in the BibTeX file: entries without a key, a file that ends inside an
+  entry (unbalanced braces), or more than half of the entries without an
+  abstract (§3.7).
 
 - a DOM check that workspace.yml turned on and that failed (§3.6).
 
@@ -231,6 +232,16 @@ A check that fails is a **warning** on the research question, naming the DOM
 file. The inspector lists each check with a tick or a warning sign. A
 research question with no report DOM (already an error) or no text is not
 checked.
+
+### 3.7 Abstracts
+
+Every BibTeX file is also checked for abstracts: an entry has one when its
+`abstract` field is present and not empty (or only spaces). When **more than
+half** of the entries have none, the research question gets a warning such as
+`ABCD-123_references_n120.bib: 70 of 120 entries (more than half) have no
+abstract`. Exactly half is fine, and a file with no entries is not checked.
+The inspector shows the count for every BibTeX file ("Abstracts: 80 of 120
+entries (67%)"). This check is always on.
 
 ## 4. Exports
 

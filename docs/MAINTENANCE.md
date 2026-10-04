@@ -105,6 +105,10 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
   whitespace; scripts, styles and comments are not page text.
 - **workspace.yml is read with no YAML package** (the core stays
   Foundation-only); extend `MiniYAML` if the file grows beyond its subset.
+- **The abstracts check warns only when more than half are missing**
+  (`AbstractCoverage.mostlyMissing`); exactly half is fine. The test helper
+  `bibtex()` gives every entry an abstract unless asked not to, so other tests
+  stay clean.
 - **Export dates are calendar dates**, with no time zone, so a test's date
   never shifts with the Mac's time zone (FILE_FORMAT §3.5). A missing export
   date is never an issue.
@@ -121,7 +125,8 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
   stray `@`s, key clashes and their line numbers, missing keys, keys with
   spaces, unbalanced files, encodings.
 - **ScannerTests** — complete single- and multi-RQ tests, each error and
-  warning, older names, numbering problems, stray items, ground truth and
+  warning, the abstracts check (more than half, exactly half, blank
+  abstracts, no entries), older names, numbering problems, stray items, ground truth and
   annotations (reading and writing), the workspace level, name parsing.
 - **ReferenceTests** — field parsing (quotes, `#`, macros, comments), LaTeX
   to text, names (particles, suffixes, organisations), APA 7 for each entry

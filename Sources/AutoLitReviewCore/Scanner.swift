@@ -397,6 +397,12 @@ private struct TestScanner {
         }
         question.referencesFound = summary.entries
         question.exportDates = summary.exportDates
+        question.abstracts = summary.abstracts
+        if summary.abstracts.mostlyMissing {
+            let missing = summary.abstracts.missing, total = summary.abstracts.total
+            question.issues.append(.warning("\(path): \(missing) of \(TextSupport.plural(total, "entry", "entries")) "
+                                            + "(more than half) have no abstract"))
+        }
         if let named = candidate.countInName, named != summary.entries {
             question.issues.append(.error("\(path): the file name says \(TextSupport.plural(named, "reference")), "
                                           + "but the file has \(summary.entries)"))

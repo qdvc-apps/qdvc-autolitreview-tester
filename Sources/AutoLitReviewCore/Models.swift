@@ -166,6 +166,30 @@ public struct ArtifactFile: Hashable, Sendable, Identifiable {
     public var name: String { url.lastPathComponent }
 }
 
+/// How many of a BibTeX file's entries have an abstract (a non-empty
+/// `abstract` field).
+public struct AbstractCoverage: Hashable, Sendable {
+    public let withAbstract: Int
+    public let total: Int
+
+    public init(withAbstract: Int, total: Int) {
+        self.withAbstract = withAbstract
+        self.total = total
+    }
+
+    public var missing: Int { total - withAbstract }
+
+    /// True when more than half of the entries have no abstract (the check
+    /// in docs/FILE_FORMAT.md §3.7). Exactly half is not more than half.
+    public var mostlyMissing: Bool { total > 0 && missing * 2 > total }
+
+    /// "80 of 120 entries (67%)".
+    public var description: String {
+        let percent = total == 0 ? 0 : Int((Double(withAbstract) * 100 / Double(total)).rounded())
+        return "\(withAbstract) of \(TextSupport.plural(total, "entry", "entries")) (\(percent)%)"
+    }
+}
+
 /// One research question of a test (the only one, or one variant) and what
 /// was found for it.
 public struct ResearchQuestion: Hashable, Sendable, Identifiable {
@@ -193,6 +217,9 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
     public var annotationFile: URL?
     /// The "EXPORT DATE:" dates in the BibTeX file, earliest first.
     public var exportDates: [ExportDate] = []
+    /// How many of the BibTeX file's entries have an abstract; nil when
+    /// there is no readable BibTeX file.
+    public var abstracts: AbstractCoverage?
     /// The results of the DOM checks the workspace asks for (workspace.yml);
     /// empty when none are on or there is no report DOM to check.
     public var domChecks: [DOMCheckResult] = []

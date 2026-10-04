@@ -31,6 +31,9 @@ struct DetailView: View {
                                 .id(question.id)
                             AnnotationRow(question: question)
                             ReferenceCountRow(question: question)
+                            if let abstracts = question.abstracts, abstracts.total > 0 {
+                                AbstractsRow(abstracts: abstracts)
+                            }
                             if !question.keyClashes.isEmpty {
                                 KeyClashesRow(clashes: question.keyClashes)
                             }
@@ -290,6 +293,29 @@ private struct ReferenceCountRow: View {
         case (nil, let named?): return "file name says \(named)"
         case (nil, nil): return "\u{2013}"
         }
+    }
+}
+
+/// How many BibTeX entries have an abstract; a warning sign when more than
+/// half don't (which is also a warning on the test).
+private struct AbstractsRow: View {
+    let abstracts: AbstractCoverage
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Label("Abstracts", systemImage: "text.alignleft")
+            Spacer()
+            Text(abstracts.description)
+                .monospacedDigit()
+                .foregroundStyle(abstracts.mostlyMissing ? Color.orange : Color.primary)
+            if abstracts.mostlyMissing {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .help("More than half of the entries have no abstract")
+                    .accessibilityLabel("More than half have no abstract")
+            }
+        }
+        .help("Entries in the BibTeX file with a non-empty abstract field")
     }
 }
 

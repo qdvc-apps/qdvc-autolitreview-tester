@@ -40,11 +40,16 @@ final class TempFolder {
     }
 }
 
-/// `count` simple BibTeX entries with keys `<prefix>1`, `<prefix>2`, …
-func bibtex(_ count: Int, prefix: String = "ref") -> String {
+/// `count` simple BibTeX entries with keys `<prefix>1`, `<prefix>2`, …;
+/// the first `withAbstract` of them (all, by default) have an abstract.
+func bibtex(_ count: Int, prefix: String = "ref", withAbstract: Int? = nil) -> String {
     guard count > 0 else { return "% no references\n" }
-    return (1...count).map { "@article{\(prefix)\($0),\n  title = {Paper \($0)},\n  year = {2024},\n}\n" }
-        .joined(separator: "\n")
+    let abstracts = withAbstract ?? count
+    return (1...count).map { n in
+        "@article{\(prefix)\(n),\n  title = {Paper \(n)},\n  year = {2024},\n"
+            + (n <= abstracts ? "  abstract = {What paper \(n) found.},\n" : "") + "}\n"
+    }
+    .joined(separator: "\n")
 }
 
 /// Writes a complete single-RQ test with literal (canonical) names.

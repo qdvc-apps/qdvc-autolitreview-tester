@@ -65,7 +65,7 @@ final class ExportTests: XCTestCase {
         try writeVariant(ws, "KC-2", 1)
         try writeVariant(ws, "KC-2", 2, skip: ["bib"])
         try ws.write("KC-2/KC-2_variant2_references_n4.bib",
-                     "@article{Smith2025,}\n@article{Lee,}\n@article{Smith2025,}\n@article{lee,}\n")
+                     "@article{Smith2025, abstract={A}}\n@article{Lee, abstract={B}}\n@article{Smith2025, abstract={C}}\n@article{lee, abstract={D}}\n")
         let tests = try WorkspaceScanner.scan(ws.url).tests
         XCTAssertEqual(tests[0].status, .complete)
 
@@ -124,7 +124,7 @@ final class ExportTests: XCTestCase {
         try writeVariant(ws, "MD-2", 1, skip: ["bib"])
         try writeVariant(ws, "MD-2", 2)
         try ws.write("MD-2/MD-2_variant1_references_n2.bib",
-                     "EXPORT DATE: 1 October 2026\n@article{K`1,}\n@article{K`1,}\n")
+                     "EXPORT DATE: 1 October 2026\n@article{K`1, abstract={A}}\n@article{K`1, abstract={B}}\n")
         let tests = try WorkspaceScanner.scan(ws.url).tests
         let date = Date(timeIntervalSince1970: 1_790_000_000)
         let md = Exporter.markdown(tests, workspaceName: "Q3_runs", generated: date,
