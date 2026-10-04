@@ -15,6 +15,27 @@ with lowercase letters, spaces or underscores) is listed in the status bar as
 an "other item" but is not a problem: exports often end up there. Hidden items
 (names starting with a dot, such as `.DS_Store`) are ignored everywhere.
 
+### 1.1 workspace.yml (optional)
+
+A `workspace.yml` (or `workspace.yaml`) at the top of the workspace holds
+settings. It is not listed as an "other item". Today it has one key,
+`dom_checks`, which turns on checks of each report DOM (§3.6):
+
+```yaml
+dom_checks:
+  rq_text_string_check: True     # each RQ's exact text must appear in its report DOM
+  all_n_references_check: True   # the DOM must say "Show all N references"
+```
+
+A check is on when its value is `True` (or `true`, `yes`, `on`, quoted or
+not) and off when it is `False` (or `false`, `no`, `off`) or missing. Any
+other value, or a file that can't be read as YAML, leaves the checks it
+affects off and shows a warning in the status bar naming the problem. The
+file is read with the rest of the workspace, so after editing it, refresh
+(⌘R) or come back to the app. Only a subset of YAML is understood: nested
+`key: value` mappings, `- item` lists, one-line `{…}` and `[…]`, quotes and
+`#` comments.
+
 ## 2. A test folder
 
 ### 2.1 Single research question
@@ -140,6 +161,8 @@ A warning is worth a look but doesn't make the test incomplete:
 - in the BibTeX file: entries without a key, or a file that ends inside an
   entry (unbalanced braces).
 
+- a DOM check that workspace.yml turned on and that failed (§3.6).
+
 A test's **status** is Errors if it has any error, else Warnings if it has any
 warning, else Complete. A research question's row status counts its own
 issues and the test-level ones.
@@ -180,6 +203,34 @@ different days (or one file gives several dates) it is the range, written
 `1–2 October 2026`, `30 September – 2 October 2026` or
 `31 December 2025 – 2 January 2026`. A file without an export date is not a
 problem; the test just has no date (or a range over the files that have one).
+
+### 3.6 DOM checks
+
+When workspace.yml turns them on (§1.1), each research question's report DOM
+(`…_report_DOM.html`) is searched:
+
+- **`rq_text_string_check`** — the research question's exact text (from
+  `RQ_asked.md`) must appear;
+- **`all_n_references_check`** — the text `Show all N references` must
+  appear, where N is the number of references in the question's BibTeX file
+  (the entries counted, or the count in the file name if the file can't be
+  read). `Show all 1,234 references` also matches 1234, and for one
+  reference `Show all 1 reference` does too.
+
+What is searched is the page's text, as a browser shows it: tags are
+removed, and so are scripts, styles and comments with their contents;
+character references are decoded (`&amp;` → &, `&#8217;` → ’, `&nbsp;` → a
+space); and every run of whitespace, including line breaks and non-breaking
+spaces, counts as one space, in the page and in the research question alike.
+A tag may or may not separate words, so both readings are tried, and the
+`value` of form fields (a search box showing the query) is searched as well.
+Beyond whitespace the match is exact: case, punctuation, quotes and accents
+must agree.
+
+A check that fails is a **warning** on the research question, naming the DOM
+file. The inspector lists each check with a tick or a warning sign. A
+research question with no report DOM (already an error) or no text is not
+checked.
 
 ## 4. Exports
 

@@ -34,6 +34,13 @@ final class SampleWorkspaceTests: XCTestCase {
         XCTAssertEqual(scan.test("DEMO-102")?.questions.map { $0.annotation != nil }, [true, true, false])
         XCTAssertNil(scan.test("DEMO-103")?.groundTruth)
         XCTAssertEqual(scan.test("DEMO-101")?.dateText, "2 October 2026")
+        XCTAssertTrue(scan.config.rqTextStringCheck)
+        XCTAssertTrue(scan.config.allNReferencesCheck)
+        XCTAssertEqual(scan.test("DEMO-101")?.questions.first?.domChecks.map(\.passed), [true, true])
+        XCTAssertEqual(scan.test("DEMO-104")?.questions.map { $0.domChecks.map(\.passed) }, [[false, true], [true, true]])
+        XCTAssertTrue(scan.test("DEMO-104")?.allIssues.contains {
+            $0.message.contains("exact text doesn\u{2019}t appear")
+        } ?? false)
         XCTAssertEqual(scan.test("DEMO-102")?.dateText, "30 September \u{2013} 2 October 2026")
 
         for test in scan.tests where test.status == .complete {

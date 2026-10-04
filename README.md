@@ -10,6 +10,9 @@ folder per test run, named like `ABCD-123`) and the app:
   and the report DOM;
 - counts the entries in every `.bib` file and checks them against the count in
   its name (`ABCD-123_references_n293.bib` must hold 293 references);
+- optionally, as set in the workspace's `workspace.yml`, checks each report
+  DOM for the research question's exact text and for "Show all N
+  references", warning when either is missing;
 - lists every test with its research questions, reference counts and **date**
   (the `EXPORT DATE` in its BibTeX files, or their range across variants),
   and opens any artifact in its default app with a double-click;
@@ -77,6 +80,19 @@ doesn't match the file name) or **warnings** (worth a look, such as a file
 named the older way or a stray file). **Clashing citation keys** (separate
 references given the same key) are listed for information, as in
 `Smith2025 (line 94) and Smith2025 (line 255)`, without affecting the status.
+
+**DOM checks** are turned on in a `workspace.yml` at the top of the
+workspace:
+
+```yaml
+dom_checks:
+  rq_text_string_check: True
+  all_n_references_check: True
+```
+
+The status bar shows which checks are on (or what's wrong with the file), the
+inspector shows each research question's results, and a failed check is a
+warning. See [docs/FILE_FORMAT.md](docs/FILE_FORMAT.md) §1.1 and §3.6.
 
 **View → Refresh** (⌘R) scans the workspace again; by default the app also
 does so whenever it comes to the front (Settings, ⌘,).

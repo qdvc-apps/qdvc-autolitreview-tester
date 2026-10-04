@@ -1,0 +1,4 @@
+# Settings for QDVC Auto Lit Review Tester (docs/FILE_FORMAT.md §1.1)
+dom_checks:
+  rq_text_string_check: True     # each RQ's exact text must appear in its report DOM
+  all_n_references_check: True   # the DOM must say "Show all N references"

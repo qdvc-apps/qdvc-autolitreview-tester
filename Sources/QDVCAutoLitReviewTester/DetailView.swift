@@ -34,6 +34,9 @@ struct DetailView: View {
                             if !question.keyClashes.isEmpty {
                                 KeyClashesRow(clashes: question.keyClashes)
                             }
+                            if !question.domChecks.isEmpty {
+                                DOMChecksRow(results: question.domChecks)
+                            }
                             ForEach(question.files) { file in
                                 ArtifactRow(file: file)
                                     .tag(file.id)
@@ -278,6 +281,32 @@ private struct ReferenceCountRow: View {
         case (nil, let named?): return "file name says \(named)"
         case (nil, nil): return "\u{2013}"
         }
+    }
+}
+
+/// The DOM checks workspace.yml asks for, each passed or failed. A failure
+/// is also a warning on the test.
+private struct DOMChecksRow: View {
+    let results: [DOMCheckResult]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("DOM checks", systemImage: "checklist")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(Array(results.enumerated()), id: \.offset) { _, result in
+                Label {
+                    Text(result.title + (result.passed ? " found" : " not found"))
+                } icon: {
+                    Image(systemName: result.passed ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(result.passed ? Color.green : Color.orange)
+                        .accessibilityLabel(result.passed ? "Passed" : "Failed")
+                }
+                .font(.callout)
+            }
+        }
+        .padding(.vertical, 2)
+        .help("Searched in the report DOM\u{2019}s text, as turned on in workspace.yml")
     }
 }
 

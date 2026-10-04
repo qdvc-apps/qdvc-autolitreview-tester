@@ -12,6 +12,8 @@ Sources/AutoLitReviewCore/    Foundation-only model layer, unit-tested
   Export.swift                CSV and HTML exports
   MarkdownExport.swift        GitHub-flavoured Markdown export
   ExportDate.swift            "EXPORT DATE:" parsing and date ranges
+  MiniYAML.swift              the small YAML subset workspace.yml needs
+  DOMChecks.swift             WorkspaceConfig (workspace.yml), DOMText, the DOM checks
   Reference.swift             BibTeX field parser, LaTeX to text, names, APA 7
   GroundTruth.swift           GroundTruth; WorkspaceWriter (ground truth, annotations)
   NewTest.swift               NewTestDraft, DropRouting, TestCreator
@@ -93,6 +95,11 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
   line of the entry's `@`.
 - **Exports cover every test**, not just what the filters show. All three
   (CSV, HTML, Markdown) carry the same information.
+- **DOM checks only run when workspace.yml turns them on**, and a failure is
+  a warning, never an error (FILE_FORMAT §3.6). Matching is exact apart from
+  whitespace; scripts, styles and comments are not page text.
+- **workspace.yml is read with no YAML package** (the core stays
+  Foundation-only); extend `MiniYAML` if the file grows beyond its subset.
 - **Export dates are calendar dates**, with no time zone, so a test's date
   never shifts with the Mac's time zone (FILE_FORMAT §3.5). A missing export
   date is never an issue.
@@ -117,6 +124,10 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **ExportTests** — CSV quoting and rows, HTML escaping and structure, the
   Markdown layout and escaping, key clashes, annotations, the ground truth
   and export dates.
+- **DOMChecksTests** — the YAML subset and its errors, reading the config
+  (values, flow form, problems), page text (entities, tags, scripts, styles,
+  comments, whitespace, form values), the "Show all N" forms, and the checks
+  in a scan (on, partly on, off, a missing DOM, a bad config).
 - **ExportDateTests** — the date forms, finding dates anywhere in a file,
   impossible dates, range formatting, and a test's range across variants.
 - **NewTestTests** — validation messages, planned names, creation (originals

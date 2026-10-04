@@ -193,6 +193,9 @@ public struct ResearchQuestion: Hashable, Sendable, Identifiable {
     public var annotationFile: URL?
     /// The "EXPORT DATE:" dates in the BibTeX file, earliest first.
     public var exportDates: [ExportDate] = []
+    /// The results of the DOM checks the workspace asks for (workspace.yml);
+    /// empty when none are on or there is no report DOM to check.
+    public var domChecks: [DOMCheckResult] = []
 
     public init(testID: String, variant: Int?, question: String? = nil, files: [ArtifactFile] = [],
                 referencesFound: Int? = nil, referencesInFileName: Int? = nil, issues: [Issue] = [],
@@ -288,11 +291,14 @@ public struct WorkspaceScan: Hashable, Sendable {
     /// (anything that isn't a folder named with A–Z, 0–9 and dashes). They
     /// are listed, not treated as problems: exports often end up here.
     public var otherItems: [String]
+    /// The settings from workspace.yml (the defaults when there is none).
+    public var config: WorkspaceConfig
 
-    public init(root: URL, tests: [TestRun], otherItems: [String]) {
+    public init(root: URL, tests: [TestRun], otherItems: [String], config: WorkspaceConfig = WorkspaceConfig()) {
         self.root = root
         self.tests = tests
         self.otherItems = otherItems
+        self.config = config
     }
 
     public var questionCount: Int { tests.reduce(0) { $0 + $1.questions.count } }

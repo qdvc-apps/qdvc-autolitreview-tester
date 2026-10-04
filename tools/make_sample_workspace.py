@@ -12,6 +12,10 @@ every kind of result the app reports.
               and variant 4 has no response screenshot (error)
     DEMO-110  single RQ, complete, with no references found (n0)
 
+workspace.yml turns on both DOM checks. Every report DOM shows its research
+question and "Show all N references", except DEMO-104 variant 1, whose DOM
+shows a reworded question (a warning).
+
 Every BibTeX file starts with a Scopus-style "EXPORT DATE:" line, so each
 test has a date; DEMO-102's variants were exported on three different days,
 so its date is a range.
@@ -33,6 +37,7 @@ Tests/AutoLitReviewCoreTests/SampleWorkspaceTests.swift checks the app's
 reading of this workspace, so update it when you change the cases here.
 """
 
+import html as htmllib
 import shutil
 import struct
 import zlib
@@ -93,9 +98,18 @@ def pdf(title):
     return out
 
 
-def html(title, question):
-    return (f"<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><title>{title}</title></head>\n"
-            f"<body><h1>{title}</h1><p>{question}</p><p>Generated literature review (sample).</p></body></html>\n")
+def html(title, question, refs):
+    """A stand-in report DOM: the question as asked (split across a line, and
+    with an inline tag, as real pages do) and a "Show all N references" button."""
+    words = htmllib.escape(question, quote=False).split(" ")
+    middle = len(words) // 2
+    shown = " ".join(words[:middle]) + "\n      <span class=\"rq-rest\">" + " ".join(words[middle:]) + "</span>"
+    button = f"Show all {refs} references" if refs != 1 else "Show all 1 reference"
+    return (f"<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><title>{title}</title>\n"
+            f"<script>window.__STATE__ = {{\"note\": \"not page text\"}};</script></head>\n"
+            f"<body>\n  <h1>{title}</h1>\n  <p class=\"rq\">{shown}</p>\n"
+            f"  <p>Generated literature review (sample).</p>\n"
+            f"  <button type=\"button\">{button}</button>\n</body></html>\n")
 
 
 def bibtex(count, seed, exported="02 October 2026"):
@@ -126,7 +140,7 @@ def write(path, data):
     path.write_bytes(data if isinstance(data, bytes) else data.encode("utf-8"))
 
 
-def single(test_id, question, refs, named=None, skip=()):
+def single(test_id, question, refs, named=None, skip=(), dom_question=None):
     folder = WORKSPACE / test_id
     query = folder / f"{test_id}_query"
     files = {
@@ -136,14 +150,16 @@ def single(test_id, question, refs, named=None, skip=()):
         "bib": (folder / f"{test_id}_references_n{refs if named is None else named}.bib",
                 bibtex(refs, sum(map(ord, test_id)) % 97)),
         "pdf": (folder / f"{test_id}_report.pdf", pdf(f"{test_id} literature review")),
-        "dom": (folder / f"{test_id}_report_DOM.html", html(f"{test_id} literature review", question)),
+        "dom": (folder / f"{test_id}_report_DOM.html",
+                html(f"{test_id} literature review", dom_question or question, refs)),
     }
     for key, (path, data) in files.items():
         if key not in skip:
             write(path, data)
 
 
-def variant(test_id, number, question, refs, old_names=False, skip=(), exported="02 October 2026"):
+def variant(test_id, number, question, refs, old_names=False, skip=(), exported="02 October 2026",
+            dom_question=None):
     folder = WORKSPACE / test_id
     query_name = f"{test_id}_variant{number}" if old_names else f"{test_id}_query_variant{number}"
     query = folder / query_name
@@ -156,7 +172,7 @@ def variant(test_id, number, question, refs, old_names=False, skip=(), exported=
         "rq": (query / f"{prefix}RQ_asked.md", question + "\n"),
         "bib": (folder / f"{top_prefix}references_n{refs}.bib", bibtex(refs, number * 7 + len(test_id), exported)),
         "pdf": (folder / f"{prefix}report.pdf", pdf(title)),
-        "dom": (folder / f"{prefix}report_DOM.html", html(title, question)),
+        "dom": (folder / f"{prefix}report_DOM.html", html(title, dom_question or question, refs)),
     }
     for key, (path, data) in files.items():
         if key not in skip:
@@ -204,7 +220,9 @@ def main():
     single("DEMO-103", "What barriers do small businesses face when adopting cloud accounting software?",
            18, named=20, skip=("dom",))
 
-    variant("DEMO-104", 1, "How is digital twin technology used in hospital operations management?", 4)
+    # The DOM shows a reworded question, so the RQ text check warns.
+    variant("DEMO-104", 1, "How is digital twin technology used in hospital operations management?", 4,
+            dom_question="How are digital twins used in hospital operations management?")
     variant("DEMO-104", 2, "What are the applications of digital twins in healthcare operations?", 6, old_names=True)
 
     variant("DEMO-105", 1, "What factors influence citizens\u2019 trust in e-government services?", 9)
@@ -213,6 +231,11 @@ def main():
 
     single("DEMO-110", "What is known about the use of blockchain for academic credential verification in Oceania?", 0)
 
+    write(WORKSPACE / "workspace.yml",
+          "# Settings for QDVC Auto Lit Review Tester (docs/FILE_FORMAT.md \u00a71.1)\n"
+          "dom_checks:\n"
+          "  rq_text_string_check: True     # each RQ's exact text must appear in its report DOM\n"
+          "  all_n_references_check: True   # the DOM must say \"Show all N references\"\n")
     write(WORKSPACE / "README.txt",
           "Sample workspace for QDVC Auto Lit Review Tester.\n"
           "Regenerate it with tools/make_sample_workspace.py.\n")

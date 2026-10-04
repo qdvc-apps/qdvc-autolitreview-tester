@@ -154,6 +154,9 @@ struct StatusBar: View {
                 Text(model.statusLine)
                     .lineLimit(1)
                 Spacer(minLength: 8)
+                if let config = model.scan?.config {
+                    WorkspaceConfigLabel(config: config)
+                }
                 if let other = model.scan?.otherItems, !other.isEmpty {
                     Label(TextSupport.plural(other.count, "other item"), systemImage: "questionmark.folder")
                         .labelStyle(.titleAndIcon)
@@ -167,6 +170,31 @@ struct StatusBar: View {
             .padding(.vertical, 5)
         }
         .background(.bar)
+    }
+}
+
+/// What workspace.yml turns on, or what's wrong with it, in the status bar.
+struct WorkspaceConfigLabel: View {
+    let config: WorkspaceConfig
+
+    var body: some View {
+        if !config.problems.isEmpty {
+            Label("\(config.fileName ?? "workspace.yml") has problems", systemImage: "exclamationmark.triangle.fill")
+                .labelStyle(.titleAndIcon)
+                .foregroundStyle(.orange)
+                .help(config.problems.joined(separator: "\n"))
+        } else if config.anyDOMCheck {
+            Label("DOM checks: " + checks, systemImage: "checklist")
+                .labelStyle(.titleAndIcon)
+                .help("Turned on in \(config.fileName ?? "workspace.yml"). Each report DOM is searched for these, and a test whose DOM lacks one gets a warning.")
+        }
+    }
+
+    private var checks: String {
+        var names: [String] = []
+        if config.rqTextStringCheck { names.append("RQ text") }
+        if config.allNReferencesCheck { names.append("\u{201C}Show all N references\u{201D}") }
+        return names.joined(separator: ", ")
     }
 }
 

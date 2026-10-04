@@ -7,21 +7,25 @@ public enum WorkspaceScanner {
     /// can't be listed; problems inside tests are reported as issues.
     public static func scan(_ root: URL, fileManager: FileManager = .default) throws -> WorkspaceScan {
         let entries = try listing(root, fileManager: fileManager)
+        let config = WorkspaceConfig.load(from: root, fileManager: fileManager)
         var tests: [TestRun] = []
         var other: [String] = []
         for entry in entries {
             if entry.isDirectory, Naming.isValidTestID(entry.name) {
-                tests.append(scanTest(at: entry.url, fileManager: fileManager))
+                tests.append(scanTest(at: entry.url, config: config, fileManager: fileManager))
+            } else if !entry.isDirectory, WorkspaceConfig.fileNames.contains(entry.name) {
+                continue
             } else {
                 other.append(entry.name)
             }
         }
-        return WorkspaceScan(root: root, tests: tests, otherItems: other)
+        return WorkspaceScan(root: root, tests: tests, otherItems: other, config: config)
     }
 
     /// Scans one test folder. Its name is taken as the test ID.
-    public static func scanTest(at folder: URL, fileManager: FileManager = .default) -> TestRun {
-        var scanner = TestScanner(id: folder.lastPathComponent, folder: folder, fileManager: fileManager)
+    public static func scanTest(at folder: URL, config: WorkspaceConfig = WorkspaceConfig(),
+                                fileManager: FileManager = .default) -> TestRun {
+        var scanner = TestScanner(id: folder.lastPathComponent, folder: folder, config: config, fileManager: fileManager)
         return scanner.run()
     }
 
@@ -48,6 +52,13 @@ public enum WorkspaceScanner {
                          size: values?.fileSize.map { Int64($0) })
         }
         .sorted { Naming.naturalLess($0.name, $1.name) }
+    }
+
+    /// A file's path relative to a test folder, for messages.
+    static func relativePath(of url: URL, in folder: URL) -> String {
+        let base = folder.standardizedFileURL.path + "/"
+        let path = url.standardizedFileURL.path
+        return path.hasPrefix(base) ? String(path.dropFirst(base.count)) : url.lastPathComponent
     }
 
     // MARK: - Names
@@ -141,9 +152,12 @@ private struct TestScanner {
     var groundTruth: GroundTruth?
     var annotations: [Int?: (url: URL, text: String)] = [:]
 
-    init(id: String, folder: URL, fileManager: FileManager) {
+    let config: WorkspaceConfig
+
+    init(id: String, folder: URL, config: WorkspaceConfig, fileManager: FileManager) {
         self.id = id
         self.folder = folder
+        self.config = config
         self.fileManager = fileManager
     }
 
@@ -334,7 +348,24 @@ private struct TestScanner {
             default: break
             }
         }
+        runDOMChecks(&question)
         return question
+    }
+
+    /// The checks workspace.yml asks for, against the report DOM.
+    private func runDOMChecks(_ question: inout ResearchQuestion) {
+        guard config.anyDOMCheck, let dom = question.file(.reportDOM) else { return }
+        let path = WorkspaceScanner.relativePath(of: dom.url, in: folder)
+        let html: String
+        do {
+            html = try TextSupport.readText(dom.url)
+        } catch {
+            question.issues.append(.warning("Couldn\u{2019}t read \(path) for the DOM checks: \(error.localizedDescription)"))
+            return
+        }
+        let outcome = DOMText.check(question, dom: DOMText(html: html), config: config, domPath: path)
+        question.domChecks = outcome.results
+        question.issues += outcome.issues
     }
 
     private func readQuestion(_ candidate: Candidate, into question: inout ResearchQuestion) {
