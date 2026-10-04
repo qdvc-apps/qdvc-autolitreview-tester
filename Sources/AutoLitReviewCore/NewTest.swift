@@ -6,6 +6,8 @@ import Foundation
 public struct DraftQuestion: Hashable, Sendable, Identifiable {
     public let id: UUID
     public var text: String
+    /// An optional note, saved as `…_annotation.md` (docs/FILE_FORMAT.md §2.5).
+    public var annotation: String = ""
     public private(set) var files: [ArtifactKind: URL] = [:]
     /// What the chosen BibTeX file holds, counted when it was chosen.
     public private(set) var referenceSummary: BibTeXSummary?
@@ -39,6 +41,50 @@ public struct DraftQuestion: Hashable, Sendable, Identifiable {
     /// The supplied-file slots that are still empty.
     public var missingFiles: [ArtifactKind] {
         ArtifactKind.suppliedFiles.filter { files[$0] == nil }
+    }
+
+    /// What still stops this question from being saved, each prefixed with
+    /// `scope` ("Variant 2: "), or capitalised when there is no scope.
+    public func problems(scope: String) -> [String] {
+        var problems: [String] = []
+        if text.trimmed.isEmpty {
+            problems.append(Self.sentence(scope, "enter the research question"))
+        }
+        if !missingFiles.isEmpty {
+            problems.append(Self.sentence(scope, "add the " + TextSupport.list(missingFiles.map(\.noun))))
+        }
+        if let referenceError {
+            problems.append(Self.sentence(scope, "the references file can\u{2019}t be read (\(referenceError))"))
+        }
+        return problems
+    }
+
+    /// The files this question becomes as `variant` (nil for single-RQ) of
+    /// the test `testID`, relative to the test folder: the artifacts chosen,
+    /// the research question, and the annotation if one was written.
+    public func plannedFiles(testID: String, variant: Int?) -> [PlannedFile] {
+        var planned: [PlannedFile] = []
+        for artifact in ArtifactKind.allCases {
+            let path = Naming.relativePath(artifact, testID: testID, variant: variant,
+                                           referenceCount: referenceSummary?.entries)
+            if artifact == .rqText {
+                planned.append(PlannedFile(relativePath: path, source: .text(text.trimmed + "\n")))
+            } else if let url = files[artifact] {
+                planned.append(PlannedFile(relativePath: path, source: .copy(url)))
+            }
+        }
+        let note = annotation.trimmed
+        if !note.isEmpty {
+            let path = Naming.queryFolderName(testID: testID, variant: variant) + "/"
+                + Naming.annotationFileName(testID: testID, variant: variant)
+            planned.append(PlannedFile(relativePath: path, source: .text(note + "\n")))
+        }
+        return planned
+    }
+
+    static func sentence(_ scope: String, _ text: String) -> String {
+        guard scope.isEmpty, let first = text.first else { return scope + text }
+        return first.uppercased() + text.dropFirst()
     }
 }
 
@@ -105,24 +151,9 @@ public struct NewTestDraft: Hashable, Sendable {
             problems.append("Add at least \(Self.minimumVariants) research questions")
         }
         for (index, question) in activeQuestions.enumerated() {
-            let scope = variant(at: index).map { "Variant \($0): " } ?? ""
-            if question.text.trimmed.isEmpty {
-                problems.append(Self.sentence(scope, "enter the research question"))
-            }
-            let missing = question.missingFiles
-            if !missing.isEmpty {
-                problems.append(Self.sentence(scope, "add the " + TextSupport.list(missing.map(\.noun))))
-            }
-            if let error = question.referenceError {
-                problems.append(Self.sentence(scope, "the references file can\u{2019}t be read (\(error))"))
-            }
+            problems += question.problems(scope: variant(at: index).map { "Variant \($0): " } ?? "")
         }
         return problems
-    }
-
-    private static func sentence(_ scope: String, _ text: String) -> String {
-        guard scope.isEmpty, let first = text.first else { return scope + text }
-        return first.uppercased() + text.dropFirst()
     }
 
     // MARK: Plan
@@ -132,20 +163,9 @@ public struct NewTestDraft: Hashable, Sendable {
     /// passes a placeholder while none has been typed).
     public func plannedFiles(testID: String? = nil) -> [PlannedFile] {
         let id = testID ?? self.id
-        var planned: [PlannedFile] = []
-        for (index, question) in activeQuestions.enumerated() {
-            let variant = self.variant(at: index)
-            for artifact in ArtifactKind.allCases {
-                let path = Naming.relativePath(artifact, testID: id, variant: variant,
-                                               referenceCount: question.referenceSummary?.entries)
-                if artifact == .rqText {
-                    planned.append(PlannedFile(relativePath: path, source: .text(question.text.trimmed + "\n")))
-                } else if let url = question.files[artifact] {
-                    planned.append(PlannedFile(relativePath: path, source: .copy(url)))
-                }
-            }
+        return activeQuestions.enumerated().flatMap { index, question in
+            question.plannedFiles(testID: id, variant: variant(at: index))
         }
-        return planned
     }
 }
 
@@ -171,12 +191,19 @@ public enum NewTestError: LocalizedError, Equatable {
     case notReady([String])
     case alreadyExists(String)
     case failed(String)
+    /// Variants can only be added to a multi-RQ test.
+    case notMultiRQ(String)
+    /// Adding variants would overwrite this item (a path in the test folder).
+    case wouldOverwrite(String)
 
     public var errorDescription: String? {
         switch self {
         case .notReady(let problems): return problems.joined(separator: "\n")
         case .alreadyExists(let id): return "A test called \(id) already exists in this workspace."
-        case .failed(let reason): return "The test folder couldn\u{2019}t be created: \(reason)"
+        case .failed(let reason): return "The files couldn\u{2019}t be created: \(reason)"
+        case .notMultiRQ(let id):
+            return "Variants can only be added to a multi-RQ test; \(id) has a single research question."
+        case .wouldOverwrite(let path): return "\(path) already exists, and nothing is ever overwritten."
         }
     }
 }
@@ -225,6 +252,103 @@ public enum TestCreator {
             throw NewTestError.failed(error.localizedDescription)
         }
         return destination
+    }
+}
+
+/// New variants for an existing multi-RQ test. They are numbered on from the
+/// test's highest variant, so 1–3 gain 4, 5 and so on.
+public struct AddVariantsDraft: Hashable, Sendable {
+    public let testID: String
+    /// The number the first new variant gets.
+    public let firstVariant: Int
+    /// Always at least one.
+    public var questions: [DraftQuestion] = [DraftQuestion()]
+
+    public init(testID: String, firstVariant: Int) {
+        self.testID = testID
+        self.firstVariant = max(1, firstVariant)
+    }
+
+    /// Numbers the new variants after the test's highest one.
+    public init(test: TestRun) {
+        self.init(testID: test.id, firstVariant: (test.questions.compactMap(\.variant).max() ?? 0) + 1)
+    }
+
+    public func variant(at index: Int) -> Int { firstVariant + index }
+
+    public mutating func addVariant() { questions.append(DraftQuestion()) }
+
+    public var canRemoveVariant: Bool { questions.count > 1 }
+
+    public mutating func removeVariant(_ id: UUID) {
+        guard canRemoveVariant else { return }
+        questions.removeAll { $0.id == id }
+    }
+
+    /// Everything that still stops the variants from being added.
+    public func problems() -> [String] {
+        questions.enumerated().flatMap { index, question in
+            question.problems(scope: "Variant \(variant(at: index)): ")
+        }
+    }
+
+    /// The new files, relative to the test folder.
+    public func plannedFiles() -> [PlannedFile] {
+        questions.enumerated().flatMap { index, question in
+            question.plannedFiles(testID: testID, variant: variant(at: index))
+        }
+    }
+}
+
+extension TestCreator {
+    /// Adds the draft's variants to an existing multi-RQ test, copying the
+    /// chosen files under the standard names (the originals are only read)
+    /// and writing the research questions and annotations. Nothing in the
+    /// test is changed or overwritten: if any new name is already taken, it
+    /// stops before writing. The files are assembled in a hidden folder
+    /// inside the test and moved into place at the end. Returns the variant
+    /// numbers added.
+    @discardableResult
+    public static func addVariants(_ draft: AddVariantsDraft, to test: TestRun,
+                                   fileManager: FileManager = .default) throws -> [Int] {
+        guard test.kind == .multi else { throw NewTestError.notMultiRQ(test.id) }
+        var draft = draft
+        for index in draft.questions.indices { draft.questions[index].recountReferences() }
+        let problems = draft.problems()
+        guard problems.isEmpty else { throw NewTestError.notReady(problems) }
+
+        let planned = draft.plannedFiles()
+        // The top-level items the variants add: their query folders and files.
+        var topLevel: [String] = []
+        for file in planned {
+            let name = String(file.relativePath.split(separator: "/").first ?? "")
+            if !topLevel.contains(name) { topLevel.append(name) }
+        }
+        for name in topLevel where fileManager.fileExists(atPath: test.folder.appendingPathComponent(name).path) {
+            throw NewTestError.wouldOverwrite("\(test.id)/\(name)")
+        }
+
+        let staging = test.folder.appendingPathComponent(".adding-variants-\(UUID().uuidString)", isDirectory: true)
+        do {
+            try fileManager.createDirectory(at: staging, withIntermediateDirectories: false)
+            for file in planned {
+                let target = staging.appendingPathComponent(file.relativePath)
+                try fileManager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                switch file.source {
+                case .copy(let source): try fileManager.copyItem(at: source, to: target)
+                case .text(let text): try Data(text.utf8).write(to: target, options: .withoutOverwriting)
+                }
+            }
+            for name in topLevel {
+                try fileManager.moveItem(at: staging.appendingPathComponent(name),
+                                         to: test.folder.appendingPathComponent(name))
+            }
+            try? fileManager.removeItem(at: staging)
+        } catch {
+            try? fileManager.removeItem(at: staging)
+            throw NewTestError.failed(error.localizedDescription)
+        }
+        return draft.questions.indices.map { draft.variant(at: $0) }
     }
 }
 

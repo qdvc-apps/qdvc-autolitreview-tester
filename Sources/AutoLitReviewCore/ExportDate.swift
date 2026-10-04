@@ -34,6 +34,12 @@ public struct ExportDate: Hashable, Comparable, Sendable {
     /// "2 October 2026"
     public var long: String { "\(day) \(Self.monthNames[month - 1]) \(year)" }
 
+    /// "2 Oct 2026"
+    public var short: String { "\(day) \(Self.shortMonth(month)) \(year)" }
+
+    /// "Jan" … "Dec".
+    public static func shortMonth(_ month: Int) -> String { String(monthNames[month - 1].prefix(3)) }
+
     // MARK: Finding and parsing
 
     /// Every distinct date given after "EXPORT DATE:" (any case, colon
@@ -98,15 +104,26 @@ public struct ExportDate: Hashable, Comparable, Sendable {
     /// "2 October 2026", "1–2 October 2026", "30 September – 2 October 2026"
     /// or "31 December 2025 – 2 January 2026"; nil for no dates.
     public static func longRange(_ dates: [ExportDate]) -> String? {
+        range(dates) { monthNames[$0 - 1] }
+    }
+
+    /// As `longRange`, with three-letter months: "2 Oct 2026",
+    /// "1–2 Oct 2026", "30 Sep – 2 Oct 2026" (the Markdown export).
+    public static func shortRange(_ dates: [ExportDate]) -> String? {
+        range(dates) { shortMonth($0) }
+    }
+
+    private static func range(_ dates: [ExportDate], month name: (Int) -> String) -> String? {
         guard let first = dates.min(), let last = dates.max() else { return nil }
-        if first == last { return first.long }
+        let end = "\(last.day) \(name(last.month)) \(last.year)"
+        if first == last { return end }
         if first.year == last.year, first.month == last.month {
-            return "\(first.day)\u{2013}\(last.day) \(monthNames[last.month - 1]) \(last.year)"
+            return "\(first.day)\u{2013}\(end)"
         }
         if first.year == last.year {
-            return "\(first.day) \(monthNames[first.month - 1]) \u{2013} \(last.long)"
+            return "\(first.day) \(name(first.month)) \u{2013} \(end)"
         }
-        return "\(first.long) \u{2013} \(last.long)"
+        return "\(first.day) \(name(first.month)) \(first.year) \u{2013} \(end)"
     }
 
     /// "2026-10-02", or "2026-10-01 to 2026-10-02"; nil for no dates.

@@ -134,7 +134,7 @@ final class ExportTests: XCTestCase {
         XCTAssertTrue(md.contains("**2 tests**: 1 complete, 0 with warnings, 1 with errors."))
         XCTAssertTrue(md.contains("| Test | Type | RQs | References | Export date | Ground truth | Status |\n| --- | --- | ---: | ---: | --- | --- | --- |\n"))
         XCTAssertTrue(md.contains("| [MD-1](#md-1) | Single RQ | 1 | 3 | \u{2013} | Smith (2024) | \u{274C} Errors |\n"))
-        XCTAssertTrue(md.contains("| [MD-2](#md-2) | Multiple RQs | 2 | 2, 2 | 1 October 2026 |  | \u{2705} Complete |\n"))
+        XCTAssertTrue(md.contains("| [MD-2](#md-2) | Multiple RQs | 2 | 2, 2 | 1 Oct 2026 |  | \u{2705} Complete |\n"))
 
         XCTAssertTrue(md.contains("\n## MD-1\n\n\u{274C} Errors, Single RQ, 3 references\n\n"))
         XCTAssertTrue(md.contains("**Ground truth:** Smith, J. (2024). Truth. *J of IS*, *7*. doi:10.1/x\n\n"))
@@ -145,7 +145,7 @@ final class ExportTests: XCTestCase {
         XCTAssertFalse(md.contains("| Export date |\n"))
         XCTAssertTrue(md.contains("- \u{274C} **Error:** MD-1\\_references\\_n4.bib: the file name says 4 references, but the file has 3\n"))
 
-        XCTAssertTrue(md.contains("\n## MD-2\n\n\u{2705} Complete, Multiple RQs, 4 references, exported 1 October 2026\n\n"))
+        XCTAssertTrue(md.contains("\n## MD-2\n\n\u{2705} Complete, Multiple RQs, 4 references, exported 1 Oct 2026\n\n"))
         XCTAssertTrue(md.contains("| Variant | Research question | Found | Annotation |\n| ---: | --- | ---: | --- |\n"))
         XCTAssertTrue(md.contains("| 1 | Question 1? | 2 | _(No annotation found.)_ |\n"))
         XCTAssertTrue(md.contains("**Key clashes** (for information)\n\n- Variant 1: `K\u{2018}1` (line 2) and `K\u{2018}1` (line 3)\n"))

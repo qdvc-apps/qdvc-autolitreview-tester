@@ -140,6 +140,111 @@ final class NewTestTests: XCTestCase {
         XCTAssertEqual(try folder.names(in: "workspace"), ["NEW-1"])
     }
 
+    func testCreateWritesOptionalAnnotations() throws {
+        let folder = try TempFolder()
+        try folder.makeFolder("workspace")
+        let workspace = folder.url.appendingPathComponent("workspace", isDirectory: true)
+        var draft = NewTestDraft()
+        draft.id = "ANN-1"
+        draft.kind = .multi
+        let one = try sources(folder, "one", references: 1)
+        let two = try sources(folder, "two", references: 1)
+        fill(&draft.questions[0], one)
+        fill(&draft.questions[1], two)
+        draft.questions[0].text = "First?"
+        draft.questions[1].text = "Second?"
+        draft.questions[0].annotation = "  Worth a second look.\n"
+        XCTAssertTrue(draft.plannedFiles().map(\.relativePath)
+            .contains("ANN-1_query_variant1/ANN-1_variant1_annotation.md"))
+        XCTAssertFalse(draft.plannedFiles().map(\.relativePath).contains { $0.contains("variant2_annotation") })
+
+        try TestCreator.create(draft, in: workspace)
+        let test = try XCTUnwrap(try WorkspaceScanner.scan(workspace).test("ANN-1"))
+        XCTAssertEqual(test.status, .complete, test.messages.joined(separator: "\n"))
+        XCTAssertEqual(test.questions.map(\.annotation), ["Worth a second look.", nil])
+    }
+
+    // MARK: Add variants
+
+    private func multiTest(_ folder: TempFolder, _ id: String, variants: [Int]) throws -> (URL, TestRun) {
+        try folder.makeFolder("workspace")
+        let ws = folder.url.appendingPathComponent("workspace", isDirectory: true)
+        for variant in variants {
+            let prefix = "\(id)_variant\(variant)_"
+            let query = "workspace/\(id)/\(id)_query_variant\(variant)/"
+            try folder.write(query + prefix + "query_asked.png", "q")
+            try folder.write(query + prefix + "response_received.png", "r")
+            try folder.write(query + prefix + "RQ_asked.md", "Q\(variant)?")
+            try folder.write("workspace/\(id)/\(prefix)references_n1.bib", bibtex(1))
+            try folder.write("workspace/\(id)/\(prefix)report.pdf", "%PDF")
+            try folder.write("workspace/\(id)/\(prefix)report_DOM.html", "<html/>")
+        }
+        return (ws, try XCTUnwrap(try WorkspaceScanner.scan(ws).test(id)))
+    }
+
+    func testAddVariantsNumbersOnAndLeavesTheTestAlone() throws {
+        let folder = try TempFolder()
+        let (ws, test) = try multiTest(folder, "AV-1", variants: [1, 2])
+        let before = try folder.names(in: "workspace/AV-1")
+
+        var draft = AddVariantsDraft(test: test)
+        XCTAssertEqual(draft.firstVariant, 3)
+        XCTAssertEqual(draft.problems().first, "Variant 3: enter the research question")
+        draft.addVariant()
+        let three = try sources(folder, "three", references: 4)
+        let four = try sources(folder, "four", references: 2)
+        fill(&draft.questions[0], three)
+        fill(&draft.questions[1], four)
+        draft.questions[0].text = "Third?"
+        draft.questions[1].text = "Fourth?"
+        draft.questions[1].annotation = "Narrowest wording"
+        XCTAssertEqual(draft.problems(), [])
+        XCTAssertTrue(draft.plannedFiles().map(\.relativePath).contains("AV-1_variant3_references_n4.bib"))
+
+        let originals = try three.mapValues { try Data(contentsOf: $0) }
+        XCTAssertEqual(try TestCreator.addVariants(draft, to: test), [3, 4])
+
+        let after = try XCTUnwrap(try WorkspaceScanner.scan(ws).test("AV-1"))
+        XCTAssertEqual(after.status, .complete, after.messages.joined(separator: "\n"))
+        XCTAssertEqual(after.questions.map(\.variant), [1, 2, 3, 4])
+        XCTAssertEqual(after.questions.map(\.question), ["Q1?", "Q2?", "Third?", "Fourth?"])
+        XCTAssertEqual(after.questions.map(\.referencesFound), [1, 1, 4, 2])
+        XCTAssertEqual(after.questions[3].annotation, "Narrowest wording")
+        // Everything that was there is still there, and no staging folder is left.
+        let names = try folder.names(in: "workspace/AV-1")
+        XCTAssertTrue(Set(before).isSubset(of: Set(names)))
+        XCTAssertFalse(names.contains { $0.hasPrefix(".") })
+        for (kind, url) in three { XCTAssertEqual(try Data(contentsOf: url), originals[kind]) }
+    }
+
+    func testAddVariantsNeverOverwrites() throws {
+        let folder = try TempFolder()
+        let (_, test) = try multiTest(folder, "AV-2", variants: [1, 2])
+        var draft = AddVariantsDraft(testID: "AV-2", firstVariant: 2)
+        let files = try sources(folder, "x", references: 1)
+        fill(&draft.questions[0], files)
+        draft.questions[0].text = "Clash?"
+        XCTAssertThrowsError(try TestCreator.addVariants(draft, to: test)) { error in
+            XCTAssertEqual(error as? NewTestError, .wouldOverwrite("AV-2/AV-2_query_variant2"))
+        }
+        XCTAssertEqual(try String(contentsOf: test.folder.appendingPathComponent("AV-2_query_variant2/AV-2_variant2_RQ_asked.md"),
+                                  encoding: .utf8), "Q2?")
+    }
+
+    func testAddVariantsNeedsAMultiRQTest() throws {
+        let folder = try TempFolder()
+        try writeSingleTest(folder, "SG-1")
+        let test = try XCTUnwrap(try WorkspaceScanner.scan(folder.url).test("SG-1"))
+        var draft = AddVariantsDraft(test: test)
+        XCTAssertEqual(draft.firstVariant, 1)
+        let files = try sources(folder, "y", references: 1)
+        fill(&draft.questions[0], files)
+        draft.questions[0].text = "Q?"
+        XCTAssertThrowsError(try TestCreator.addVariants(draft, to: test)) { error in
+            XCTAssertEqual(error as? NewTestError, .notMultiRQ("SG-1"))
+        }
+    }
+
     func testCreateCountsTheBibTeXAgain() throws {
         let folder = try TempFolder()
         try folder.makeFolder("workspace")

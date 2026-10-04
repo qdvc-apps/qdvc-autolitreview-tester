@@ -87,6 +87,9 @@ struct TesterCommands: Commands {
                 .keyboardShortcut("c", modifiers: [.command, .option, .shift])
                 .disabled(model.focusedTest?.questions.contains { $0.question != nil } != true)
             Divider()
+            Button("Add Variants\u{2026}") { model.beginAddVariants(model.focusedTest) }
+                .keyboardShortcut("n", modifiers: [.command, .option])
+                .disabled(model.focusedTest?.kind != .multi)
             Button(model.focusedTest?.groundTruth == nil ? "Add Ground Truth\u{2026}" : "Edit Ground Truth\u{2026}") {
                 model.beginEditGroundTruth(model.focusedTest)
             }

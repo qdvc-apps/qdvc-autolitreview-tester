@@ -42,7 +42,7 @@ extension Exporter {
         for test in tests {
             let refs = test.questions.map { $0.referencesFound.map(grouped) ?? "\u{2013}" }.joined(separator: ", ")
             md += "| [\(inline(test.id))](#\(anchor(test.id))) | \(test.kind.title) | \(test.questions.count) | \(refs) | "
-            md += "\(cell(test.dateText ?? "\u{2013}")) | \(cell(test.groundTruth?.shortCitation ?? "")) | "
+            md += "\(cell(ExportDate.shortRange(test.exportDates) ?? "\u{2013}")) | \(cell(test.groundTruth?.shortCitation ?? "")) | "
             md += "\(statusText(test.status)) |\n"
         }
         md += "\n"
@@ -61,7 +61,7 @@ extension Exporter {
         var md = "## \(inline(test.id))\n\n"
         var facts = [statusText(test.status), test.kind.title,
                      TextSupport.plural(test.totalReferences, "reference")]
-        if let date = test.dateText { facts.append("exported \(date)") }
+        if let date = ExportDate.shortRange(test.exportDates) { facts.append("exported \(date)") }
         md += facts.joined(separator: ", ") + "\n\n"
 
         if let base = linkBase {

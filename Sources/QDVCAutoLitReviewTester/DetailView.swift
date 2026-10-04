@@ -78,6 +78,16 @@ private struct TestHeader: View {
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
                 Spacer()
+                if test.kind == .multi {
+                    Button {
+                        model.beginAddVariants(test)
+                    } label: {
+                        Label("Add Variants", systemImage: "plus.square.on.square")
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .help("Add more variants to this test (\u{2325}\u{2318}N)")
+                }
                 if test.questions.count > 1, test.questions.contains(where: { $0.question != nil }) {
                     CopyButton(title: "Copy All Research Questions") { model.copyAllQuestions(test) }
                         .buttonStyle(.borderless)

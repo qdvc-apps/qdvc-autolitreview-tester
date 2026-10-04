@@ -193,6 +193,10 @@ struct TestContextMenu: View {
         if test.questions.count > 1 {
             Button("Copy All Research Questions") { model.copyAllQuestions(test) }
         }
+        if test.kind == .multi {
+            Divider()
+            Button("Add Variants\u{2026}") { model.beginAddVariants(test) }
+        }
         Divider()
         Button(test.groundTruth == nil ? "Add Ground Truth\u{2026}" : "Edit Ground Truth\u{2026}") {
             model.beginEditGroundTruth(test)

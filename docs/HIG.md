@@ -87,7 +87,11 @@ show the chosen file's name (and, for BibTeX, the number of references).
   rejects a character.
 - **Create Test** is the default button and stays disabled until everything is
   there; the footer says what is still missing, one item at a time.
-- "Files to be created" previews the folder.
+- "Files to be created" previews the folder, left-aligned like a file list.
+- Each research question has an optional annotation field under the question.
+- **Add Variants** reuses the same sheet layout (one section per new variant)
+  without the ID and type, and says in its first line which variants the test
+  already has and where the numbering continues.
 
 ## 6. Shortcuts
 

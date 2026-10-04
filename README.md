@@ -65,7 +65,12 @@ a detail pane.
   files. Several files can be dropped at once anywhere on a research question
   and each goes to the right slot; a dropped `.md` or `.txt` file fills in the
   question. The BibTeX file's references are counted to name it. **Create
-  Test** is enabled once everything is there.
+  Test** is enabled once everything is there. Each research question can
+  also have an optional annotation.
+- **Add Variants** (⌥⌘N, or the button in the inspector's header) adds
+  research questions to an existing multi-RQ test, numbered on from its
+  highest variant, in the same way: type the question (and an optional
+  annotation) and drop the files. Nothing already in the test is changed.
 
 Problems are **errors** (something is missing or wrong, such as a count that
 doesn't match the file name) or **warnings** (worth a look, such as a file
@@ -148,6 +153,7 @@ built by `scripts/build-app.sh`, but not when you use `swift run`.
 | --- | --- |
 | ⌘1, ⌘2 | Tests, Research Questions |
 | ⌘N | New test |
+| ⌥⌘N | Add variants to the selected multi-RQ test |
 | ⌘O | Open workspace |
 | ⇧⌘W | Close workspace |
 | ⌘F | Search |

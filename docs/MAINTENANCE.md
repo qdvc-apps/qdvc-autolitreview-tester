@@ -22,6 +22,7 @@ Sources/QDVCAutoLitReviewTester/  SwiftUI/AppKit front-end
   ContentView.swift           toolbar, split view, status bar, welcome screen
   SidebarView.swift, TablesView.swift, DetailView.swift
   NewTestSheet.swift          the New Test sheet and its drop targets
+  AddVariantsSheet.swift      adding variants to an existing multi-RQ test
   GroundTruthSheet.swift      entering a ground truth, with a live APA 7 preview
   ReferenceViews.swift        CopyButton; AttributedString/RTF for references
   Commands.swift              menu-bar commands
@@ -79,6 +80,9 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **New Test never changes the originals**: it copies, assembles under a
   hidden name and renames into place, and removes the hidden folder on
   failure. It recounts the BibTeX file at creation time.
+- **Add Variants never changes or overwrites anything in the test**
+  (`TestCreator.addVariants`): it checks every new top-level name first,
+  numbers on from the highest variant, and only works on multi-RQ tests.
 - **Older names are accepted with a warning** (FILE_FORMAT §2.3), and the
   standard name wins when both exist. New tests use only standard names.
 - **Reference counting** follows FILE_FORMAT §3.2; the CSV and HTML exports and
@@ -116,14 +120,18 @@ sort change. The detail pane and the Test menu act on `focusedTest` and
 - **ExportDateTests** — the date forms, finding dates anywhere in a file,
   impossible dates, range formatting, and a test's range across variants.
 - **NewTestTests** — validation messages, planned names, creation (originals
-  untouched, recounting, refusal of an existing ID, cleanup on failure) and
-  drop routing.
+  untouched, recounting, refusal of an existing ID, cleanup on failure),
+  optional annotations, adding variants (numbering, never overwriting,
+  multi-RQ only) and drop routing.
 - **SampleWorkspaceTests** — the expected reading of `sample-workspace/`.
 
 The core also builds and tests with a Linux Swift toolchain, because the
 manifest declares the app target only on macOS.
 
 ## 5. Roadmap
+
+- Turn a single-RQ test into a multi-RQ one (renaming its files to variant 1)
+  so it can take more variants.
 
 - Sentence-case article titles for APA (needs a way to protect proper nouns
   beyond braces).

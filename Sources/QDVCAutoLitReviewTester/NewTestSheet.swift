@@ -160,6 +160,10 @@ struct NewTestSheet: View {
                 paths.append("  " + Naming.relativePath(kind, testID: id, variant: variant,
                                                         referenceCount: question.referenceSummary?.entries))
             }
+            if !question.annotation.trimmed.isEmpty {
+                paths.append("  " + Naming.queryFolderName(testID: id, variant: variant) + "/"
+                             + Naming.annotationFileName(testID: id, variant: variant))
+            }
         }
         return paths
     }
@@ -182,8 +186,9 @@ struct NewTestSheet: View {
     }
 }
 
-/// One research question: its text and its five file slots.
-private struct QuestionEditor: View {
+/// One research question: its text, an optional annotation and its five
+/// file slots. Shared by the New Test and Add Variants sheets.
+struct QuestionEditor: View {
     @Binding var question: DraftQuestion
     let onNote: (String?) -> Void
 
@@ -194,6 +199,9 @@ private struct QuestionEditor: View {
             .dropDestination(for: URL.self) { urls, _ in
                 handleDrop(urls, preferring: nil)
             }
+        TextField("Annotation", text: $question.annotation,
+                  prompt: Text("Optional: a brief note about this research question"), axis: .vertical)
+            .lineLimit(1...5)
         ForEach(ArtifactKind.suppliedFiles) { kind in
             FileSlotRow(kind: kind,
                         url: question.files[kind],

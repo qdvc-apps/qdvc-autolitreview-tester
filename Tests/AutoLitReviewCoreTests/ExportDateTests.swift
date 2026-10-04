@@ -45,6 +45,13 @@ final class ExportDateTests: XCTestCase {
                        "31 December 2025 \u{2013} 2 January 2026")
         XCTAssertEqual(ExportDate.isoRange([date(2026, 10, 2), date(2026, 10, 1)]), "2026-10-01 to 2026-10-02")
         XCTAssertEqual(ExportDate.isoRange([date(2026, 10, 2)]), "2026-10-02")
+
+        XCTAssertEqual(date(2026, 9, 23).short, "23 Sep 2026")
+        XCTAssertEqual(ExportDate.shortRange([]), nil)
+        XCTAssertEqual(ExportDate.shortRange([date(2026, 9, 23)]), "23 Sep 2026")
+        XCTAssertEqual(ExportDate.shortRange([date(2026, 10, 1), date(2026, 10, 2)]), "1\u{2013}2 Oct 2026")
+        XCTAssertEqual(ExportDate.shortRange([date(2026, 9, 30), date(2026, 10, 2)]), "30 Sep \u{2013} 2 Oct 2026")
+        XCTAssertEqual(ExportDate.shortRange([date(2025, 12, 31), date(2026, 1, 2)]), "31 Dec 2025 \u{2013} 2 Jan 2026")
     }
 
     func testTestDateIsTheRangeOfItsVariants() throws {

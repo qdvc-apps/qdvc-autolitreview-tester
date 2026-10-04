@@ -230,8 +230,9 @@ Git host (and readable as plain text):
 
 - a `#` title, the workspace name and export time, and a one-line summary;
 - an overview table (test, type, number of research questions, references per
-  research question, export date, ground truth as "Smith et al. (2024)",
-  status), whose test IDs link to the sections below;
+  research question, export date with a short month, as in `23 Sep 2026` or
+  `30 Sep – 2 Oct 2026`, ground truth as "Smith et al. (2024)", status),
+  whose test IDs link to the sections below;
 - a `##` section per test (its anchor is the ID in lowercase, `#abcd-123`):
   status, type, references and date; a link to the test folder; the ground
   truth with its italics and a link to its BibTeX file; a table of research
@@ -293,7 +294,21 @@ puts just the DOI, without the `doi:` prefix (`10.1234/abcd9999`).
 New Test creates `ID/` with the standard names of §2.1 or §2.2. The dropped
 files are **copied**, never moved or changed; the research question files are
 written from the text typed. The BibTeX file's entries are counted again when
-the test is created, and that count goes in its name. The folder is assembled
+the test is created, and that count goes in its name. An annotation typed
+for a research question is written as its `…_annotation.md` (§2.5); left
+empty, no file is written. The folder is assembled
 under a hidden name (`.ID.creating-<uuid>`) and renamed into place at the end,
 so a failure part-way leaves nothing behind. A test ID that already exists in
 the workspace is refused.
+
+### 6.1 Adding variants to an existing test
+
+Test → Add Variants… adds research questions to an existing **multi-RQ**
+test. The new variants are numbered on from the test's highest variant (a
+test with variants 1–3 gains 4, 5 and so on; gaps are not filled), and each
+gets the same files as in §2.2, copied in under the standard names, plus its
+annotation if one is typed. Nothing already in the test is changed: if any of
+the new names is already taken, nothing is written. The files are assembled
+in a hidden folder inside the test (`.adding-variants-<uuid>`) and moved into
+place at the end. A single-RQ test can't take variants this way, because its
+files would have to be renamed to `…_variant1_…`.
